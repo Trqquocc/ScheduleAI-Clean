@@ -4,10 +4,29 @@
  */
 
 require("dotenv").config();
+// Thêm dòng này ngay sau require("dotenv").config();
+console.log(
+  "🔍 DEBUG: Full GEMINI_API_KEY from env:",
+  process.env.GEMINI_API_KEY
+    ? "Loaded (length: " + process.env.GEMINI_API_KEY.length + ")"
+    : "EMPTY!"
+);
+
+// Trong fetch, thêm ?key= trực tiếp để debug
+const response = await fetch(
+  `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`
+);
+console.log(
+  "🔍 DEBUG: Fetch URL preview:",
+  `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY.substring(
+    0,
+    10
+  )}...`
+);
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const API_KEY =
-  process.env.GEMINI_API_KEY || "AIzaSyBjvuBaNpYe3wH_pJSwM_ApjDCpTZvf2AE";
+  process.env.GEMINI_API_KEY || "AIzaSyCp8fxOCTgqcfPUPnzlyAu45KlICuAT_uU";
 
 console.log("=".repeat(60));
 console.log("🔍 KIỂM TRA GEMINI API KEY");

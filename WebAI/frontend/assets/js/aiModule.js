@@ -229,53 +229,116 @@
     // ==========================================================
     // ⭐ FIXED: OPEN AI SUGGESTION MODAL - CẢI THIỆN VỚI AIHandler
     // ==========================================================
+    // Thêm vào hoặc thay thế hàm openAiSuggestionModal trong aiModule.js
+
+    /**
+     * ✅ SIMPLIFIED VERSION - Mở modal và init AIHandler
+     */
+    // Thay thế hàm openAiSuggestionModal() trong aiModule.js
+    // Tìm hàm này (khoảng dòng 238) và thay bằng code dưới đây
+
+    /**
+     * ✅ SIMPLIFIED VERSION - Mở modal và init AIHandler
+     */
     openAiSuggestionModal() {
       console.log("🤖 Opening AI suggestion modal...");
 
-      // Phương pháp 1: Dùng ModalManager nếu có
-      if (window.ModalManager && ModalManager.showModalById) {
-        const modalElement = document.getElementById("aiSuggestionModal");
+      try {
+        const modal = document.getElementById("aiSuggestionModal");
 
-        if (!modalElement) {
-          console.error("❌ AI Suggestion Modal element not found");
-
-          // Load modal nếu chưa có
-          if (window.ComponentLoader && ComponentLoader.loadComponent) {
-            console.log("📄 Loading AI modal via ComponentLoader...");
-            ComponentLoader.loadComponent(
-              "aiSuggestionModal",
-              "components/modals/ai-suggestion-modal.html",
-              { executeScripts: true }
-            )
-              .then((success) => {
-                if (success) {
-                  setTimeout(() => {
-                    ModalManager.showModalById("aiSuggestionModal");
-                    // Gọi AIHandler để populate tasks
-                    this.initAIModalContent();
-                  }, 300);
-                }
-              })
-              .catch((err) => {
-                console.error("❌ Failed to load AI modal:", err);
-                // Fallback to method 2
-                this.showAIModalFallback();
-              });
-          } else {
-            this.showAIModalFallback();
-          }
+        if (!modal) {
+          console.error("❌ AI modal element not found");
+          alert("Không tìm thấy modal AI. Vui lòng tải lại trang.");
           return;
         }
 
-        ModalManager.showModalById("aiSuggestionModal");
+        // Hiển thị modal
+        modal.classList.add("active", "show");
+        modal.style.display = "flex";
+        document.body.classList.add("modal-open");
 
-        // Gọi AIHandler để populate tasks
+        console.log("✅ Modal displayed");
+
+        // Wait 500ms rồi init AIHandler
         setTimeout(() => {
-          this.initAIModalContent();
+          console.log("🔄 Initializing AIHandler...");
+
+          if (window.AIHandler && window.AIHandler.initAIModal) {
+            AIHandler.initAIModal()
+              .then(() => {
+                console.log("✅ AIHandler initialized successfully");
+              })
+              .catch((error) => {
+                console.error("❌ AIHandler init failed:", error);
+                this.showModalError(error.message);
+              });
+          } else {
+            console.error("❌ AIHandler not available");
+            this.showModalError(
+              "AIHandler không khả dụng. Vui lòng tải lại trang."
+            );
+          }
         }, 500);
-      } else {
-        // Phương pháp 2: Fallback - tự hiển thị modal
-        this.showAIModalFallback();
+      } catch (error) {
+        console.error("❌ Error opening modal:", error);
+        alert("Lỗi mở modal: " + error.message);
+      }
+    },
+
+    /**
+     * Hiển thị lỗi trong modal
+     */
+    showModalError(message) {
+      const modalBody = document.querySelector(
+        "#aiSuggestionModal .ai-modal-body"
+      );
+      if (modalBody) {
+        modalBody.innerHTML = `
+      <div class="error-state" style="text-align: center; padding: 40px;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #EF4444; margin-bottom: 20px;"></i>
+        <p style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">Không thể tải dữ liệu</p>
+        <p style="color: #666; margin-bottom: 20px;">${message}</p>
+        <button class="btn btn-primary" onclick="AIModule.openAiSuggestionModal()" style="padding: 10px 20px; background: #3B82F6; color: white; border: none; border-radius: 8px; cursor: pointer;">
+          <i class="fas fa-redo"></i>
+          Thử lại
+        </button>
+      </div>
+    `;
+      }
+    },
+
+    /**
+     * Helper để đóng modal
+     */
+    closeModal() {
+      const modal = document.getElementById("aiSuggestionModal");
+      if (modal) {
+        modal.classList.remove("active", "show");
+        modal.style.display = "none";
+        document.body.classList.remove("modal-open");
+        console.log("✅ Modal closed");
+      }
+    },
+
+    /**
+     * Hiển thị lỗi trong modal
+     */
+    showModalError(message) {
+      const modalBody = document.querySelector(
+        "#aiSuggestionModal .ai-modal-body"
+      );
+      if (modalBody) {
+        modalBody.innerHTML = `
+      <div class="error-state" style="text-align: center; padding: 40px;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #EF4444; margin-bottom: 20px;"></i>
+        <p style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">Không thể tải dữ liệu</p>
+        <p style="color: #666; margin-bottom: 20px;">${message}</p>
+        <button class="btn btn-primary" onclick="AIModule.openAiSuggestionModal()" style="padding: 10px 20px; background: #3B82F6; color: white; border: none; border-radius: 8px; cursor: pointer;">
+          <i class="fas fa-redo"></i>
+          Thử lại
+        </button>
+      </div>
+    `;
       }
     },
 
