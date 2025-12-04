@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Debug Auth</title>
+  </head>
+  <body>
+    <h1>Debug Authentication</h1>
+    <button onclick="checkLocalStorage()">Check LocalStorage</button>
+    <button onclick="checkAuth()">Check Auth API</button>
+    <button onclick="clearStorage()">Clear Storage</button>
+    <div id="result"></div>
+
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/auth.js"></script>
+
+    <script>
+      async function checkLocalStorage() {
+        const token = localStorage.getItem("token");
+        const user = localStorage.getItem("user_data");
+        document.getElementById("result").innerHTML = `
+                <h3>LocalStorage:</h3>
+                <p>Token: ${token ? "✅ Exists" : "❌ Missing"}</p>
+                <p>User: ${user ? "✅ Exists" : "❌ Missing"}</p>
+                <pre>${user || "No user data"}</pre>
+            `;
+      }
+
+      async function checkAuth() {
+        try {
+          const token = localStorage.getItem("token");
+          if (!token) {
+            document.getElementById("result").innerHTML = "❌ No token";
+            return;
+          }
+
+          const response = await fetch("/api/auth/verify", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const result = await response.json();
+
+          document.getElementById("result").innerHTML = `
+                    <h3>Auth Check:</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+        } catch (error) {
+          document.getElementById(
+            "result"
+          ).innerHTML = `Error: ${error.message}`;
+        }
+      }
+
+      function clearStorage() {
+        localStorage.clear();
+        document.getElementById("result").innerHTML = "✅ Storage cleared";
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,239 @@
+/* ===================================
+   SECTION VISIBILITY
+   =================================== */
+.section {
+  display: none;
+}
+
+.section.active {
+  display: block !important;
+}
+
+/* Special case for schedule section with flexbox */
+#schedule-section.active {
+  display: flex !important;
+}
+
+/* ===================================
+   MODAL STYLES
+   =================================== */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.show {
+  display: flex !important;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 90%;
+  max-height: 90%;
+  overflow: auto;
+}
+
+/* ===================================
+   UTILITY CLASSES
+   =================================== */
+.hidden {
+  display: none !important;
+}
+
+/* ===================================
+   FONT AWESOME ICON FIX
+   CHỈ ÁP DỤNG CHO ICON, KHÔNG ẢNH HƯỞNG TEXT
+   =================================== */
+
+/* CHỈ áp dụng cho icon elements, KHÔNG phải text */
+i.fas,
+i.far,
+i.fab,
+i.fa,
+span.fas,
+span.far,
+span.fab,
+span.fa {
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: inline-block;
+}
+
+/* Solid icons */
+i.fas,
+span.fas {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+}
+
+/* Regular icons */
+i.far,
+span.far {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 400;
+}
+
+/* Brand icons */
+i.fab,
+span.fab {
+  font-family: "Font Awesome 6 Brands";
+  font-weight: 400;
+}
+
+/* Loading state - CHỈ ẢNH HƯỞNG ICON */
+body:not(.fa-loaded) i[class*="fa-"],
+body:not(.fa-loaded) span[class*="fa-"] {
+  opacity: 0;
+}
+
+/* Loaded state */
+body.fa-loaded i[class*="fa-"],
+body.fa-loaded span[class*="fa-"] {
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* ===================================
+   ICON HELPER CLASSES
+   =================================== */
+
+/* Spinning animation */
+.fa-spin {
+  animation: fa-spin 2s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Icon sizes */
+.fa-xs {
+  font-size: 0.75em;
+}
+.fa-sm {
+  font-size: 0.875em;
+}
+.fa-lg {
+  font-size: 1.25em;
+}
+.fa-2x {
+  font-size: 2em;
+}
+.fa-3x {
+  font-size: 3em;
+}
+
+/* ===================================
+   ICON IN BUTTONS & NAV
+   =================================== */
+.nav-btn i,
+button i,
+a i {
+  margin-right: 0.5em;
+  vertical-align: middle;
+}
+
+/* ===================================
+   TÍNH NĂNG MỚI - ĐÃ BỔ SUNG
+   =================================== */
+
+/* Công việc/sự kiện đã hoàn thành */
+.event-completed {
+  opacity: 0.6 !important;
+  text-decoration: line-through !important;
+}
+
+/* Công việc có thời gian cố định (trong danh sách task và lịch) */
+.fixed-time-task {
+  border-left: 4px solid #10b981 !important; /* xanh lá emerald */
+  background-color: rgba(16, 185, 129, 0.05) !important;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Hiệu ứng mở rộng mượt mà cho phần thời gian cố định */
+#fixedTimeFields {
+  transition: all 0.3s ease;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+}
+
+#fixedTimeFields:not(.hidden) {
+  opacity: 1;
+  max-height: 600px; /* đủ lớn để chứa toàn bộ nội dung */
+  margin-top: 12px;
+}
+
+/* Cảnh báo xung đột thời gian (có thể dùng cho toast hoặc highlight) */
+.time-conflict-warning {
+  animation: pulse 0.6s ease-in-out 3;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid #ef4444 !important;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Modal chi tiết sự kiện - hiệu ứng hiện mượt */
+#eventDetailModal {
+  animation: modalFadeIn 0.25s ease-out forwards;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Optional: thêm hiệu ứng cho nút khi hover */
+#saveEventStatus:hover,
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+/* ===================================
+   PRINT STYLES
+   =================================== */
+@media print {
+  i[class*="fa-"],
+  span[class*="fa-"] {
+    color: #000 !important;
+  }
+
+  .event-completed {
+    opacity: 0.7 !important;
+    text-decoration: line-through !important;
+  }
+}

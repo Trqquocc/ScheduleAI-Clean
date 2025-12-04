@@ -1,0 +1,420 @@
+<!-- frontend/components/modals/create-task-modal.html -->
+<div class="modal-content p-6 w-96 max-w-full max-h-[90vh] overflow-y-auto">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-semibold">Tạo công việc mới</h3>
+    <button
+      id="closeCreateTaskBtn"
+      class="text-gray-500 hover:text-gray-700 text-xl"
+      type="button"
+    >
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <form id="createTaskForm">
+    <div class="space-y-4">
+      <!-- Tiêu đề -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700">
+          Tiêu đề công việc *
+        </label>
+        <input
+          id="taskTitle"
+          type="text"
+          class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Nhập tiêu đề công việc"
+          required
+        />
+      </div>
+
+      <!-- Mô tả -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700">
+          Mô tả
+        </label>
+        <textarea
+          id="taskDescription"
+          class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Nhập mô tả công việc"
+          rows="3"
+        ></textarea>
+      </div>
+
+      <!-- Danh mục -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700"
+          >Danh mục</label
+        >
+        <div id="category-container" class="space-y-2">
+          <!-- Danh mục sẽ load động ở đây -->
+        </div>
+        <button
+          id="createNewCategoryBtn"
+          class="mt-2 text-blue-600 hover:underline text-sm"
+        >
+          + Tạo mới danh mục
+        </button>
+      </div>
+
+      <!-- Tag -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700">
+          Tag
+        </label>
+        <input
+          id="taskTag"
+          type="text"
+          class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="urgent, project, important..."
+        />
+      </div>
+
+      <!-- Thời lượng ước tính -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700">
+          Thời lượng ước tính (phút)
+        </label>
+        <input
+          id="taskDuration"
+          type="number"
+          min="0"
+          class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Ví dụ: 30"
+        />
+      </div>
+
+      <!-- Mức độ ưu tiên -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700">
+          Mức độ ưu tiên
+        </label>
+        <select
+          id="taskPriority"
+          class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="1">Thấp</option>
+          <option value="2" selected>Trung bình</option>
+          <option value="3">Cao</option>
+          <option value="4">Rất cao</option>
+        </select>
+      </div>
+
+      <!-- Mức độ phức tạp -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700">
+          Mức độ phức tạp
+        </label>
+        <select
+          id="taskComplexity"
+          class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="">Chọn mức độ</option>
+          <option value="1">Đơn giản</option>
+          <option value="2">Trung bình</option>
+          <option value="3">Phức tạp</option>
+          <option value="4">Rất phức tạp</option>
+        </select>
+      </div>
+
+      <!-- Mức độ tập trung -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700">
+          Mức độ tập trung
+        </label>
+        <select
+          id="taskFocusLevel"
+          class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="">Chọn mức độ</option>
+          <option value="1">Thấp</option>
+          <option value="2">Trung bình</option>
+          <option value="3">Cao</option>
+          <option value="4">Rất cao</option>
+        </select>
+      </div>
+
+      <!-- Thời điểm thích hợp -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700">
+          Thời điểm thích hợp
+        </label>
+        <select
+          id="taskSuitableTime"
+          class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="">Chọn thời điểm</option>
+          <option value="1">Sáng</option>
+          <option value="2">Trưa</option>
+          <option value="3">Chiều</option>
+          <option value="4">Tối</option>
+        </select>
+      </div>
+
+      <!-- PHẦN MỚI: Có thời gian cố định -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700">
+          <input
+            type="checkbox"
+            id="taskFixedTime"
+            class="mr-2 align-middle"
+            onchange="toggleFixedTimeFields()"
+          />
+          Có thời gian cố định
+        </label>
+
+        <div
+          id="fixedTimeFields"
+          class="hidden space-y-3 mt-3 border border-gray-200 p-4 rounded bg-gray-50"
+        >
+          <!-- Ngày và giờ bắt đầu -->
+          <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700"
+              >Ngày và giờ bắt đầu *</label
+            >
+            <input
+              id="taskFixedStartTime"
+              type="datetime-local"
+              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+
+          <!-- Thời lượng (phút) -->
+          <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700"
+              >Thời lượng (phút)</label
+            >
+            <input
+              id="taskFixedDuration"
+              type="number"
+              min="1"
+              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ví dụ: 120 (2 giờ)"
+              onchange="calculateEndTime()"
+            />
+          </div>
+
+          <!-- Giờ kết thúc (tự động) -->
+          <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700"
+              >Giờ kết thúc</label
+            >
+            <input
+              id="taskFixedEndTime"
+              type="datetime-local"
+              class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100"
+              readonly
+            />
+          </div>
+
+          <!-- Lặp lại -->
+          <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700"
+              >Lặp lại</label
+            >
+            <select
+              id="taskRepeatOption"
+              class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Không lặp</option>
+              <option value="daily">Hàng ngày</option>
+              <option value="weekly">Hàng tuần</option>
+              <option value="monthly">Hàng tháng</option>
+              <option value="custom">Tùy chỉnh</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lương theo giờ -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700">
+          Lương theo giờ (VND)
+        </label>
+        <input
+          id="taskHourlyWage"
+          type="number"
+          min="0"
+          value="0"
+          class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Submit buttons -->
+      <div class="flex justify-end gap-2 mt-6">
+        <button
+          id="cancelCreateTaskBtn"
+          type="button"
+          class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+        >
+          Hủy
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          <span class="submit-text">Tạo công việc</span>
+          <span class="submit-loading hidden">Đang tạo...</span>
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Modal tạo danh mục mới (giữ nguyên) -->
+<div
+  id="createCategoryModal"
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50"
+>
+  <!-- ... nội dung modal tạo danh mục giữ nguyên như cũ ... -->
+</div>
+
+<script>
+  (function () {
+    // Hàm toggle hiển thị trường thời gian cố định
+    window.toggleFixedTimeFields = function () {
+      const checkbox = document.getElementById("taskFixedTime");
+      const fields = document.getElementById("fixedTimeFields");
+      const startTimeInput = document.getElementById("taskFixedStartTime");
+
+      if (checkbox.checked) {
+        fields.classList.remove("hidden");
+        // Đặt mặc định là sáng mai 8h
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(8, 0, 0, 0);
+        startTimeInput.value = tomorrow.toISOString().slice(0, 16);
+        calculateEndTime();
+      } else {
+        fields.classList.add("hidden");
+      }
+    };
+
+    // Tính giờ kết thúc tự động
+    window.calculateEndTime = function () {
+      const startTimeInput = document.getElementById("taskFixedStartTime");
+      const durationInput = document.getElementById("taskFixedDuration");
+      const endTimeInput = document.getElementById("taskFixedEndTime");
+
+      if (
+        startTimeInput.value &&
+        durationInput.value &&
+        parseInt(durationInput.value) > 0
+      ) {
+        const start = new Date(startTimeInput.value);
+        const duration = parseInt(durationInput.value);
+        const end = new Date(start.getTime() + duration * 60000);
+        endTimeInput.value = end.toISOString().slice(0, 16);
+      } else {
+        endTimeInput.value = "";
+      }
+    };
+
+    // Load danh mục (giữ nguyên như cũ)
+    async function loadCategories() {
+      /* ... giữ nguyên code cũ ... */
+    }
+
+    // Các xử lý modal danh mục (giữ nguyên)
+    document
+      .getElementById("createNewCategoryBtn")
+      ?.addEventListener("click", () => {
+        document
+          .getElementById("createCategoryModal")
+          .classList.remove("hidden");
+      });
+    // ... các event khác của danh mục ...
+
+    loadCategories();
+
+    // ================== SUBMIT FORM - ĐÃ CẬP NHẬT ==================
+    const form = document.getElementById("createTaskForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const submitBtn = form.querySelector("button[type=submit]");
+      const submitBtnText = submitBtn.querySelector(".submit-text");
+      const submitBtnLoading = submitBtn.querySelector(".submit-loading");
+
+      submitBtn.disabled = true;
+      submitBtnText.classList.add("hidden");
+      submitBtnLoading.classList.remove("hidden");
+
+      try {
+        const selectedCategory =
+          document.querySelector('input[name="taskCategory"]:checked')?.value ||
+          null;
+
+        const isFixedTime = document.getElementById("taskFixedTime").checked;
+        const fixedStartTime =
+          document.getElementById("taskFixedStartTime").value;
+        const fixedDuration =
+          document.getElementById("taskFixedDuration").value;
+        const fixedEndTime = document.getElementById("taskFixedEndTime").value;
+        const repeatOption = document.getElementById("taskRepeatOption").value;
+
+        const data = {
+          TieuDe: document.getElementById("taskTitle").value.trim(),
+          MoTa: document.getElementById("taskDescription").value || null,
+          MaLoai: selectedCategory,
+          Tag: document.getElementById("taskTag").value || null,
+          TrangThaiThucHien: "pending",
+          ThoiGianUocTinh: isFixedTime
+            ? parseInt(fixedDuration) || 60
+            : parseInt(document.getElementById("taskDuration").value) || 0,
+          MucDoUuTien:
+            parseInt(document.getElementById("taskPriority").value) || 2,
+          MucDoPhucTap: document.getElementById("taskComplexity").value || null,
+          MucDoTapTrung:
+            document.getElementById("taskFocusLevel").value || null,
+          ThoiDiemThichHop:
+            document.getElementById("taskSuitableTime").value || null,
+          LuongTheoGio:
+            parseInt(document.getElementById("taskHourlyWage").value) || 0,
+
+          // === Các trường mới ===
+          CoThoiGianCoDinh: isFixedTime,
+          GioBatDauCoDinh: isFixedTime ? fixedStartTime : null,
+          GioKetThucCoDinh: isFixedTime ? fixedEndTime : null,
+          LapLai: isFixedTime ? repeatOption || null : null,
+        };
+
+        const result = await Utils.makeRequest("/api/tasks", "POST", data);
+
+        if (result.success) {
+          Utils.showToast("Tạo công việc thành công", "success");
+          form.reset();
+          document.getElementById("fixedTimeFields").classList.add("hidden");
+          document.getElementById("taskFixedTime").checked = false;
+
+          if (window.ModalManager) ModalManager.close("createTaskModal");
+          if (window.WorkManager?.reload)
+            setTimeout(() => WorkManager.reload(), 300);
+          if (typeof window.loadUserTasks === "function")
+            setTimeout(() => window.loadUserTasks("pending"), 300);
+        } else {
+          throw new Error(result.message || "Lỗi tạo công việc");
+        }
+      } catch (err) {
+        console.error("Lỗi tạo công việc:", err);
+        Utils.showToast(err.message || "Lỗi tạo công việc", "error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtnText.classList.remove("hidden");
+        submitBtnLoading.classList.add("hidden");
+      }
+    });
+
+    // Nút hủy & đóng modal
+    document
+      .getElementById("cancelCreateTaskBtn")
+      ?.addEventListener("click", () => {
+        if (window.ModalManager) ModalManager.close("createTaskModal");
+      });
+    document
+      .getElementById("closeCreateTaskBtn")
+      ?.addEventListener("click", () => {
+        if (window.ModalManager) ModalManager.close("createTaskModal");
+      });
+  })();
+</script>

@@ -1,0 +1,546 @@
+<!-- components/modals/create-task-modal.html -->
+
+<!-- Overlay -->
+<div class="modal-overlay" data-modal-close></div>
+
+<!-- Modal Content -->
+<div
+  class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+  id="createTaskModalContent"
+>
+  <!-- Modal Header -->
+  <div
+    class="sticky top-0 z-10 bg-white border-b px-6 py-4 flex justify-between items-center"
+  >
+    <h2 class="text-xl font-bold text-gray-800">Tạo công việc mới</h2>
+    <button
+      id="closeCreateTaskBtn"
+      class="text-gray-400 hover:text-gray-600 transition-colors"
+      aria-label="Close"
+    >
+      <i class="fas fa-times text-xl"></i>
+    </button>
+  </div>
+
+  <!-- Modal Body -->
+  <div class="p-6">
+    <form id="createTaskForm" class="space-y-6">
+      <!-- Tiêu đề -->
+      <div>
+        <label
+          for="taskTitle"
+          class="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Tiêu đề công việc *
+        </label>
+        <input
+          type="text"
+          id="taskTitle"
+          name="taskTitle"
+          required
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Nhập tiêu đề công việc..."
+        />
+      </div>
+
+      <!-- Mô tả -->
+      <div>
+        <label
+          for="taskDescription"
+          class="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Mô tả (tùy chọn)
+        </label>
+        <textarea
+          id="taskDescription"
+          name="taskDescription"
+          rows="3"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Nhập mô tả chi tiết..."
+        ></textarea>
+      </div>
+
+      <!-- Danh mục -->
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <label class="block text-sm font-medium text-gray-700">
+            Danh mục
+          </label>
+          <button
+            type="button"
+            id="createNewCategoryBtn"
+            class="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            <i class="fas fa-plus mr-1"></i> Tạo mới danh mục
+          </button>
+        </div>
+        <div
+          id="category-container"
+          class="border border-gray-300 rounded-md p-3 min-h-[60px] max-h-[200px] overflow-y-auto bg-gray-50"
+        >
+          <!-- Danh mục sẽ load động ở đây -->
+          <div class="text-gray-500 text-center py-4" id="category-loading">
+            <i class="fas fa-spinner fa-spin mr-2"></i>
+            Đang tải danh mục...
+          </div>
+        </div>
+      </div>
+
+      <!-- Tag -->
+      <div>
+        <label
+          for="taskTag"
+          class="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Tag
+        </label>
+        <input
+          type="text"
+          id="taskTag"
+          name="taskTag"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="urgent, project, important..."
+        />
+      </div>
+
+      <!-- Thời gian ước tính (chung) -->
+      <div>
+        <label
+          for="taskDuration"
+          class="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Thời gian ước tính (phút)
+        </label>
+        <input
+          type="number"
+          id="taskDuration"
+          name="taskDuration"
+          value="60"
+          min="5"
+          step="5"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      <!-- Mức độ ưu tiên -->
+      <div>
+        <label
+          for="taskPriority"
+          class="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Mức độ ưu tiên
+        </label>
+        <select
+          id="taskPriority"
+          name="taskPriority"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="1">Thấp</option>
+          <option value="2" selected>Trung bình</option>
+          <option value="3">Cao</option>
+          <option value="4">Rất cao</option>
+        </select>
+      </div>
+
+      <!-- Mức độ phức tạp -->
+      <div>
+        <label
+          for="taskComplexity"
+          class="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Mức độ phức tạp
+        </label>
+        <select
+          id="taskComplexity"
+          name="taskComplexity"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="">Chọn mức độ</option>
+          <option value="1">Đơn giản</option>
+          <option value="2">Trung bình</option>
+          <option value="3">Phức tạp</option>
+          <option value="4">Rất phức tạp</option>
+        </select>
+      </div>
+
+      <!-- Mức độ tập trung -->
+      <div>
+        <label
+          for="taskFocusLevel"
+          class="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Mức độ tập trung
+        </label>
+        <select
+          id="taskFocusLevel"
+          name="taskFocusLevel"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="">Chọn mức độ</option>
+          <option value="1">Thấp</option>
+          <option value="2">Trung bình</option>
+          <option value="3">Cao</option>
+          <option value="4">Rất cao</option>
+        </select>
+      </div>
+
+      <!-- Thời điểm thích hợp -->
+      <div>
+        <label
+          for="taskSuitableTime"
+          class="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Thời điểm thích hợp
+        </label>
+        <select
+          id="taskSuitableTime"
+          name="taskSuitableTime"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="">Chọn thời điểm</option>
+          <option value="1">Sáng</option>
+          <option value="2">Trưa</option>
+          <option value="3">Chiều</option>
+          <option value="4">Tối</option>
+        </select>
+      </div>
+
+      <!-- Thời gian cố định -->
+      <div class="border-t pt-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            id="taskFixedTime"
+            class="rounded text-blue-600 focus:ring-blue-500"
+          />
+          <span class="text-sm font-medium text-gray-700"
+            >Có thời gian cố định</span
+          >
+        </label>
+
+        <!-- Fields thời gian cố định -->
+        <div
+          id="fixedTimeFields"
+          class="hidden mt-4 space-y-4 bg-gray-50 p-4 rounded-md"
+        >
+          <div>
+            <label
+              for="taskFixedStartTime"
+              class="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Ngày và giờ bắt đầu *
+            </label>
+            <input
+              type="datetime-local"
+              id="taskFixedStartTime"
+              name="taskFixedStartTime"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label
+              for="taskFixedDuration"
+              class="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Thời lượng (phút)
+            </label>
+            <input
+              type="number"
+              id="taskFixedDuration"
+              name="taskFixedDuration"
+              value="60"
+              min="5"
+              step="5"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label
+              for="taskFixedEndTime"
+              class="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Giờ kết thúc (tự động)
+            </label>
+            <input
+              type="datetime-local"
+              id="taskFixedEndTime"
+              name="taskFixedEndTime"
+              readonly
+              class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
+            />
+          </div>
+
+          <!-- Tùy chọn lặp lại -->
+          <div>
+            <label
+              for="taskRepeatOption"
+              class="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Lặp lại
+            </label>
+            <select
+              id="taskRepeatOption"
+              name="taskRepeatOption"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Không lặp</option>
+              <option value="daily">Hàng ngày</option>
+              <option value="weekly">Hàng tuần</option>
+              <option value="monthly">Hàng tháng</option>
+              <option value="custom">Tùy chỉnh</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lương theo giờ -->
+      <div>
+        <label
+          for="taskHourlyWage"
+          class="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Lương theo giờ (VND)
+        </label>
+        <input
+          type="number"
+          id="taskHourlyWage"
+          name="taskHourlyWage"
+          value="0"
+          min="0"
+          step="1000"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex justify-end gap-3 pt-6 border-t">
+        <button
+          type="button"
+          id="cancelCreateTaskBtn"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+        >
+          Hủy
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors flex items-center gap-2"
+        >
+          <span class="submit-text">Tạo công việc</span>
+          <span class="submit-loading hidden">
+            <i class="fas fa-spinner fa-spin"></i> Đang xử lý...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal tạo danh mục mới -->
+<div
+  id="createCategoryModal"
+  class="fixed inset-0 flex items-center justify-center hidden"
+  style="z-index: 10000 !important; background-color: rgba(0, 0, 0, 0.5)"
+>
+  <div class="bg-white p-6 rounded-lg w-96">
+    <button
+      id="closeCategoryModalBtn"
+      class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 z-10"
+    >
+      <i class="fas fa-times text-lg"></i>
+    </button>
+    <h3 class="text-lg font-semibold mb-4">Tạo danh mục mới</h3>
+    <form id="createCategoryForm">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Tên danh mục *</label>
+          <input
+            id="newCategoryName"
+            type="text"
+            class="w-full border rounded px-3 py-2"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Màu sắc</label>
+          <input
+            id="newCategoryColor"
+            type="color"
+            class="w-full border rounded px-3 py-2"
+            value="#3B82F6"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Mô tả</label>
+          <textarea
+            id="newCategoryDesc"
+            class="w-full border rounded px-3 py-2"
+            rows="2"
+          ></textarea>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            id="cancelCategoryBtn"
+            class="px-4 py-2 border rounded"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 bg-blue-600 text-white rounded"
+          >
+            Tạo
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ĐƠN GIẢN: Script inline ngắn gọn -->
+<script>
+  // Debug: Kiểm tra script có chạy không
+  console.log("🎯 [CREATE-TASK-MODAL] Script inline started");
+
+  // Hàm load danh mục
+  async function loadCategoriesForModal() {
+    console.log("🔄 [CREATE-TASK-MODAL] loadCategoriesForModal called");
+
+    const container = document.getElementById("category-container");
+    if (!container) {
+      console.error("❌ [CREATE-TASK-MODAL] container not found");
+      return;
+    }
+
+    container.innerHTML =
+      '<div class="text-gray-500 text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Đang tải danh mục...</div>';
+
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (!token) throw new Error("No auth token");
+
+      console.log("📤 [CREATE-TASK-MODAL] Fetching categories...");
+      const response = await fetch("/api/categories", {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("📥 [CREATE-TASK-MODAL] Response status:", response.status);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("📦 [CREATE-TASK-MODAL] Result:", result);
+
+      if (result.success && result.data) {
+        renderCategories(result.data);
+      } else {
+        throw new Error(result.message || "Failed to load categories");
+      }
+    } catch (error) {
+      console.error("❌ [CREATE-TASK-MODAL] Error:", error);
+      const container = document.getElementById("category-container");
+      if (container) {
+        container.innerHTML = `
+        <div class="text-red-500 text-center p-3">
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          Lỗi tải danh mục: ${error.message}
+        </div>
+      `;
+      }
+    }
+  }
+
+  function renderCategories(categories) {
+    const container = document.getElementById("category-container");
+    if (!container) return;
+
+    if (!categories || categories.length === 0) {
+      container.innerHTML = `
+      <div class="text-gray-500 text-center py-4 italic">
+        Chưa có danh mục nào.
+        <br>
+        Nhấn "+ Tạo mới danh mục" để thêm.
+      </div>
+    `;
+      return;
+    }
+
+    let html = "";
+    categories.forEach((cat) => {
+      html += `
+      <div class="flex items-center justify-between border border-gray-300 rounded px-3 py-2 mb-2 hover:bg-gray-50">
+        <label class="flex items-center gap-3 cursor-pointer flex-1">
+          <input type="radio" name="taskCategory" value="${cat.MaLoai}" 
+                 class="category-radio h-4 w-4 text-blue-600 focus:ring-blue-500" />
+          <span class="text-sm font-medium text-gray-700">${cat.TenLoai}</span>
+          <div class="w-4 h-4 rounded-full border-2 border-gray-300" 
+               style="background-color: ${cat.MauSac || "#3B82F6"}"></div>
+        </label>
+      </div>
+    `;
+    });
+
+    container.innerHTML = html;
+    console.log(
+      `✅ [CREATE-TASK-MODAL] Rendered ${categories.length} categories`
+    );
+  }
+
+  // Khởi tạo sự kiện khi modal mở
+  function initCreateTaskModal() {
+    console.log("🔧 [CREATE-TASK-MODAL] initCreateTaskModal called");
+
+    // Nút tạo danh mục
+    const createBtn = document.getElementById("createNewCategoryBtn");
+    if (createBtn) {
+      console.log("✅ [CREATE-TASK-MODAL] Found createNewCategoryBtn");
+      createBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation(); // QUAN TRỌNG: Ngăn sự kiện lan ra
+        e.stopImmediatePropagation(); // Ngăn tất cả handlers khác
+
+        console.log("➕ [CREATE-TASK-MODAL] Create category button clicked");
+
+        const categoryModal = document.getElementById("createCategoryModal");
+        if (!categoryModal) {
+          console.error("❌ Category modal not found!");
+          return;
+        }
+
+        // FORCE HIỂN THỊ
+        categoryModal.classList.remove("hidden");
+        categoryModal.style.display = "flex";
+        categoryModal.style.position = "fixed";
+        categoryModal.style.zIndex = "10000"; // CAO HƠN modal chính
+        categoryModal.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+        categoryModal.style.opacity = "1";
+        categoryModal.style.visibility = "visible";
+
+        // Focus vào input
+        setTimeout(() => {
+          const nameInput = document.getElementById("newCategoryName");
+          if (nameInput) nameInput.focus();
+        }, 50);
+
+        console.log("✅ Category modal shown with z-index: 10000");
+      });
+    }
+
+    // Load danh mục
+    loadCategoriesForModal();
+  }
+
+  // Xuất hàm để gọi từ bên ngoài
+  window.initCreateTaskModal = initCreateTaskModal;
+  window.loadCategoriesForModal = loadCategoriesForModal;
+
+  console.log("✅ [CREATE-TASK-MODAL] Script inline loaded");
+</script>

@@ -1,0 +1,58 @@
+<header
+  class="flex items-center justify-between border-b border-gray-200 px-6 py-3"
+>
+  <div class="flex items-center gap-2">
+    <button
+      id="prev-btn"
+      aria-label="Previous"
+      class="flex items-center justify-center w-6 h-6 rounded border border-gray-300 text-gray-600 hover:bg-gray-100"
+      type="button"
+    >
+      <i class="fas fa-chevron-left text-[12px]"></i>
+    </button>
+    <span id="current-date" class="text-[13px] font-semibold text-[#333]"
+      >Today</span
+    >
+    <button
+      id="next-btn"
+      aria-label="Next"
+      class="flex items-center justify-center w-6 h-6 rounded border border-gray-300 text-gray-600 hover:bg-gray-100"
+      type="button"
+    >
+      <i class="fas fa-chevron-right text-[12px]"></i>
+    </button>
+  </div>
+  <nav class="flex items-center gap-3 text-[13px] font-semibold text-[#666]">
+    <button
+      id="day-view"
+      class="px-3 py-1 rounded cursor-pointer hover:bg-[#f3f3f3]"
+      type="button"
+    >
+      Day
+    </button>
+    <button
+      id="week-view"
+      class="px-3 py-1 rounded bg-[#d32f2f] text-white cursor-default"
+      type="button"
+    >
+      Week
+    </button>
+    <button
+      id="month-view"
+      class="px-3 py-1 rounded cursor-pointer hover:bg-[#f3f3f3]"
+      type="button"
+    >
+      Month
+    </button>
+  </nav>
+  <div
+    class="flex items-center border border-gray-200 rounded px-3 py-1 w-[180px]"
+  >
+    <i class="fas fa-search text-gray-400 text-[12px]"></i>
+    <input
+      type="text"
+      placeholder="Tìm Kiếm"
+      class="ml-2 w-full text-[12px] outline-none placeholder:text-gray-400"
+    />
+  </div>
+</header>

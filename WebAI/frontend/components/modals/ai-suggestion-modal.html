@@ -1,0 +1,227 @@
+<!-- AI Suggestion Modal - Complete Fixed Version -->
+<div id="aiSuggestionModal" class="modal">
+  <!-- Modal Overlay -->
+  <div
+    class="modal-overlay"
+    onclick="ModalManager.hideModalById('aiSuggestionModal')"
+  ></div>
+
+  <!-- Modal Content -->
+  <div class="modal-content ai-modal">
+    <!-- Header -->
+    <div class="ai-modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">
+          <i class="fas fa-robot"></i>
+        </div>
+        <div class="modal-title">
+          <h3>Tạo Lịch Trình Thông Minh</h3>
+          <p class="modal-subtitle">AI sẽ sắp xếp công việc tối ưu cho bạn</p>
+        </div>
+      </div>
+      <button
+        class="modal-close"
+        onclick="ModalManager.hideModalById('aiSuggestionModal')"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="ai-modal-body">
+      <!-- Form với ID chính xác -->
+      <form id="aiSuggestionForm">
+        <!-- Date Range Section -->
+        <div class="form-section">
+          <div class="section-title">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Chọn Khoảng Thời Gian</span>
+          </div>
+          <div class="date-range-grid">
+            <div class="form-group">
+              <label class="form-label">Từ ngày</label>
+              <input type="date" id="aiStartDate" class="date-input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Đến ngày</label>
+              <input type="date" id="aiEndDate" class="date-input" required />
+            </div>
+          </div>
+        </div>
+
+        <!-- Task Selection Section -->
+        <div class="form-section">
+          <div class="section-header">
+            <div class="section-title">
+              <i class="fas fa-tasks"></i>
+              <span>Chọn Công Việc</span>
+            </div>
+            <button type="button" class="btn-select-all">
+              <i class="fas fa-check-double"></i>
+              <span>Chọn tất cả</span>
+            </button>
+          </div>
+
+          <!-- Task List Container -->
+          <div class="task-list-container">
+            <div class="task-list" id="aiTaskList">
+              <!-- Loading State -->
+              <div class="loading-state">
+                <div class="loading-spinner">
+                  <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Đang tải công việc...</p>
+              </div>
+            </div>
+
+            <!-- Task Stats -->
+            <div class="task-stats">Đã chọn: <strong>0</strong> công việc</div>
+          </div>
+        </div>
+
+        <!-- AI Options Section -->
+        <div class="form-section">
+          <div class="section-title">
+            <i class="fas fa-sliders-h"></i>
+            <span>Tùy Chọn AI</span>
+          </div>
+
+          <div class="ai-options-grid">
+            <!-- Option 1: Avoid Conflict -->
+            <label class="ai-option">
+              <input type="checkbox" id="aiOptionAvoidConflict" checked />
+              <div class="option-content">
+                <div class="option-icon">
+                  <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="option-text">
+                  <strong>Tránh trùng lịch</strong>
+                  <small>Không xếp vào khung giờ đã có</small>
+                </div>
+              </div>
+            </label>
+
+            <!-- Option 2: Consider Priority -->
+            <label class="ai-option">
+              <input type="checkbox" id="aiOptionConsiderPriority" checked />
+              <div class="option-content">
+                <div class="option-icon">
+                  <i class="fas fa-star"></i>
+                </div>
+                <div class="option-text">
+                  <strong>Ưu tiên quan trọng</strong>
+                  <small>Xếp việc quan trọng trước</small>
+                </div>
+              </div>
+            </label>
+
+            <!-- Option 3: Balance Workload -->
+            <label class="ai-option">
+              <input type="checkbox" id="aiOptionBalanceWorkload" checked />
+              <div class="option-content">
+                <div class="option-icon">
+                  <i class="fas fa-balance-scale"></i>
+                </div>
+                <div class="option-text">
+                  <strong>Cân bằng khối lượng</strong>
+                  <small>Phân đều công việc các ngày</small>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="ai-modal-footer">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        onclick="ModalManager.hideModalById('aiSuggestionModal')"
+      >
+        <i class="fas fa-times"></i>
+        <span>Đóng</span>
+      </button>
+      <button type="submit" class="btn btn-primary" form="aiSuggestionForm">
+        <i class="fas fa-magic"></i>
+        <span>Tạo Lịch Trình</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  console.log("🤖 AI Modal Script - Simple Integration");
+
+  // Simple handler for modal initialization
+  (function () {
+    // Set default dates
+    function setDefaultDates() {
+      const today = new Date();
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() + 7);
+
+      const startInput = document.getElementById("aiStartDate");
+      const endInput = document.getElementById("aiEndDate");
+
+      if (startInput) {
+        startInput.value = today.toISOString().split("T")[0];
+      }
+      if (endInput) {
+        endInput.value = endDate.toISOString().split("T")[0];
+      }
+    }
+
+    // Initialize when modal is shown
+    function initializeAIModal() {
+      console.log("🚀 Initializing AI modal...");
+
+      // Set dates
+      setDefaultDates();
+
+      // Wait for AIHandler
+      setTimeout(() => {
+        if (window.AIHandler && window.AIHandler.populateAIModal) {
+          console.log("📋 Calling AIHandler.populateAIModal...");
+          AIHandler.populateAIModal();
+        } else {
+          console.error("❌ AIHandler not available");
+        }
+      }, 500);
+    }
+
+    // Listen for modal show events
+    document.addEventListener("modal-shown", (e) => {
+      if (e.detail && e.detail.modalId === "aiSuggestionModal") {
+        console.log("🎯 AI Modal shown, initializing...");
+        setTimeout(initializeAIModal, 300);
+      }
+    });
+
+    // Also listen for manual modal open
+    const modal = document.getElementById("aiSuggestionModal");
+    if (modal) {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (
+            mutation.type === "attributes" &&
+            mutation.attributeName === "class"
+          ) {
+            if (
+              modal.classList.contains("active") ||
+              modal.classList.contains("show")
+            ) {
+              console.log("👁️ Modal became visible, initializing...");
+              setTimeout(initializeAIModal, 300);
+            }
+          }
+        });
+      });
+
+      observer.observe(modal, { attributes: true });
+    }
+
+    console.log("✅ AI Modal Script ready");
+  })();
+</script>

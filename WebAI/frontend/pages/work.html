@@ -1,0 +1,120 @@
+<!-- pages/work.html -->
+<div class="container mx-auto p-4">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Quản lý công việc</h1>
+    <button
+      id="create-task-btn"
+      class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+    >
+      <i class="fas fa-plus"></i>
+      Tạo công việc mới
+    </button>
+  </div>
+
+  <!-- Container công việc -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="p-4 border-b border-gray-200">
+      <h2 class="text-lg font-semibold text-gray-700">Danh sách công việc</h2>
+    </div>
+
+    <div id="work-items-container" class="p-4">
+      <!-- Nội dung công việc sẽ được tải ở đây -->
+      <div class="text-center py-8 text-gray-500">
+        <div
+          class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"
+        ></div>
+        <div>Đang tải công việc...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fallback UI nếu có lỗi -->
+  <div id="work-error-container" class="hidden">
+    <div class="text-center py-8 text-red-500">
+      <div class="text-lg mb-2">❌ Không thể tải danh sách công việc</div>
+      <button
+        onclick="if(window.WorkManager) WorkManager.reload()"
+        class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+      >
+        Thử lại
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    "use strict";
+
+    console.log("📋 Work page loaded");
+
+    // Khởi tạo khi DOM ready
+    function initWorkPage() {
+      console.log("🔧 Initializing work page...");
+
+      // Kiểm tra dependencies
+      if (typeof Utils === "undefined") {
+        console.warn("⚠️ Utils not loaded, waiting...");
+        setTimeout(initWorkPage, 200);
+        return;
+      }
+
+      if (typeof ModalManager === "undefined") {
+        console.warn("⚠️ ModalManager not loaded, waiting...");
+        setTimeout(initWorkPage, 200);
+        return;
+      }
+
+      // Bind nút tạo công việc
+      const createBtn = document.getElementById("create-task-btn");
+      if (createBtn) {
+        // Remove old listeners
+        const newBtn = createBtn.cloneNode(true);
+        createBtn.parentNode.replaceChild(newBtn, createBtn);
+
+        // Add new listener
+        newBtn.addEventListener("click", () => {
+          console.log("🎯 Create task button clicked");
+
+          if (window.ModalManager) {
+            console.log("📂 Opening createTaskModal...");
+            ModalManager.showModalById("createTaskModal");
+          } else {
+            console.error("❌ ModalManager not available");
+            if (window.Utils && Utils.showToast) {
+              Utils.showToast(
+                "Không thể mở modal, vui lòng tải lại trang",
+                "error"
+              );
+            }
+          }
+        });
+
+        console.log("✅ Create task button initialized");
+      } else {
+        console.warn("⚠️ Create task button not found");
+      }
+
+      // Load work items nếu WorkManager có sẵn
+      if (window.WorkManager) {
+        console.log("📦 Loading work items...");
+        if (typeof WorkManager.init === "function") {
+          WorkManager.init();
+        } else if (typeof WorkManager.reload === "function") {
+          WorkManager.reload();
+        }
+      } else {
+        console.warn("⚠️ WorkManager not available yet");
+      }
+
+      console.log("✅ Work page initialized");
+    }
+
+    // Start initialization
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initWorkPage);
+    } else {
+      setTimeout(initWorkPage, 100);
+    }
+  })();
+</script>
