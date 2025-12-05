@@ -338,4 +338,80 @@ router.get("/range", async (req, res) => {
   }
 });
 
+outer.get("/ai-events", async (req, res) => {
+  try {
+    const userId = req.user.UserID;
+    console.log(`🤖 Fetching AI events for user: ${userId}`);
+
+    const pool = await dbPoolPromise;
+
+    const result = await pool.request().input("userId", sql.Int, userId).query(`
+        SELECT 
+          lt.MaLichTrinh AS ID,
+          lt.MaCongViec,
+          lt.UserID,
+          lt.GioBatDau AS ThoiGianBatDau,
+          lt.GioKetThuc AS ThoiGianKetThuc,
+          lt.DaHoanThanh,
+          lt.GhiChu,
+          lt.AI_DeXuat,
+          lt.NgayTao AS LichTrinhNgayTao,
+          cv.TieuDe,
+          cv.MoTa,
+          cv.NgayTao AS CongViecNgayTao,
+          lc.MauSac AS MaMau
+        FROM LichTrinh lt
+        LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
+        LEFT JOIN LoaiCongViec lc ON cv.MaLoai = lc.MaLoai
+        WHERE lt.UserID = @userId 
+          AND lt.AI_DeXuat = 1  -- Chỉ lấy events do AI đề xuất
+        ORDER BY lt.GioBatDau ASC
+      `);
+
+    console.log(
+      `✅ Found ${result.recordset.length} AI events for user ${userId}`
+    );
+
+    // Xử lý dữ liệu
+    const events = result.recordset.map((ev) => {
+      return {
+        ID: ev.ID || 0,
+        MaLichTrinh: ev.ID,
+        TieuDe: ev.TieuDe || "AI Đề xuất",
+        title: ev.TieuDe || "AI Đề xuất",
+        GioBatDau: ev.ThoiGianBatDau,
+        GioKetThuc: ev.ThoiGianKetThuc,
+        ThoiGianBatDau: ev.ThoiGianBatDau,
+        ThoiGianKetThuc: ev.ThoiGianKetThuc,
+        DaHoanThanh: ev.DaHoanThanh,
+        GhiChu: ev.GhiChu || "",
+        AI_DeXuat: ev.AI_DeXuat,
+        MaMau: ev.MaMau || "#8B5CF6",
+        Color: ev.MaMau || "#8B5CF6",
+        backgroundColor: ev.MaMau || "#8B5CF6",
+        extendedProps: {
+          note: ev.GhiChu || "",
+          completed: ev.DaHoanThanh || false,
+          aiSuggested: true, // Luôn là true cho endpoint này
+          taskId: ev.MaCongViec || null,
+          description: ev.MoTa || "",
+          created: ev.CongViecNgayTao || ev.LichTrinhNgayTao,
+        },
+      };
+    });
+
+    res.json({
+      success: true,
+      data: events,
+    });
+  } catch (error) {
+    console.error("Error fetching AI events:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi tải lịch trình AI",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;
