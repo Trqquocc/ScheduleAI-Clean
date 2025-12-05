@@ -96,6 +96,7 @@
     // ==========================================================
     // ⭐ LOAD EVENTS - Tải lịch đã có của người dùng
     // ==========================================================
+    // SỬA hàm loadEventsForAI trong aiModule.js
     async loadEventsForAI() {
       try {
         console.log("📥 Loading existing events for AI calendar...");
@@ -108,22 +109,37 @@
         const res = await Utils.makeRequest("/api/calendar/events", "GET");
         if (!res.success || !Array.isArray(res.data)) return [];
 
-        const events = res.data.map((ev) => ({
-          id: ev.MaLichTrinh || ev.ID,
-          title: ev.TieuDe || "Không tiêu đề",
-          start: ev.GioBatDau,
-          end: ev.GioKetThuc || undefined,
-          backgroundColor: ev.Color || "#3788d8",
-          borderColor: ev.Color || "#3788d8",
-          extendedProps: {
-            note: ev.GhiChu || "",
-            completed: ev.DaHoanThanh === 1,
-            taskId: ev.MaCongViec || null,
-            aiSuggested: false, // Đánh dấu đây không phải AI suggestion
-          },
-        }));
+        const events = res.data.map((ev) => {
+          // ⭐ QUAN TRỌNG: GIỮ LẠI MÀU GỐC TỪ DATABASE
+          const originalColor = ev.Color || ev.color;
+          const isAI = ev.isAISuggestion === true || ev.aiSuggested === true;
 
-        console.log(`✅ Loaded ${events.length} existing events`);
+          return {
+            id: ev.MaLichTrinh || ev.ID || `ev-${Date.now()}-${Math.random()}`,
+            title: ev.TieuDe || "Không tiêu đề",
+            start: ev.GioBatDau,
+            end: ev.GioKetThuc || undefined,
+            // ⭐ SỬ DỤNG MÀU GỐC, nếu không có thì dùng màu mặc định
+            backgroundColor: originalColor || (isAI ? "#8B5CF6" : "#3788d8"),
+            borderColor: originalColor || (isAI ? "#7c3aed" : "#3788d8"),
+            classNames: isAI ? ["event-ai-suggested"] : [],
+            extendedProps: {
+              note: ev.GhiChu || "",
+              completed: ev.DaHoanThanh === 1,
+              taskId: ev.MaCongViec || null,
+              aiSuggested: isAI,
+              // ⭐ LƯU MÀU GỐC ĐỂ DÙNG LẠI
+              originalColor: originalColor,
+              isAISuggestion: isAI,
+            },
+          };
+        });
+
+        console.log(
+          `✅ Loaded ${events.length} existing events (${
+            events.filter((e) => e.extendedProps.aiSuggested).length
+          } AI)`
+        );
         return events;
       } catch (err) {
         console.error("❌ Load events error:", err);
@@ -147,6 +163,12 @@
             Utils.showToast("Không có đề xuất từ AI", "warning");
           }
           return [];
+        }
+
+        // ✅ KIỂM TRA CALENDAR ĐÃ ĐƯỢC KHỞI TẠO CHƯA
+        if (!this.calendar) {
+          console.error("❌ Calendar chưa được khởi tạo");
+          throw new Error("Calendar chưa sẵn sàng. Vui lòng đợi.");
         }
 
         // Convert AI suggestions to calendar events
@@ -180,39 +202,43 @@
         // Lưu AI events
         this.suggestedEvents = aiEvents;
 
-        // THÊM MỚI: Không xóa calendar cũ, chỉ thêm AI events
-        if (this.calendar) {
-          console.log(`📅 Adding ${aiEvents.length} AI events to calendar...`);
+        console.log(`📅 Adding ${aiEvents.length} AI events to calendar...`);
 
-          // Xóa các AI events cũ trước khi thêm mới
-          const existingAIEvents = this.calendar
-            .getEvents()
-            .filter((event) => event.id && event.id.includes("ai-suggestion-"));
+        // ✅ XÓA CÁC AI EVENTS CŨ TRƯỚC KHI THÊM MỚI
+        const existingAIEvents = this.calendar
+          .getEvents()
+          .filter((event) => event.id && event.id.includes("ai-suggestion-"));
 
-          existingAIEvents.forEach((event) => {
-            event.remove();
-          });
+        console.log(`🗑️ Removing ${existingAIEvents.length} old AI events...`);
+        existingAIEvents.forEach((event) => {
+          event.remove();
+        });
 
-          // Thêm AI events mới
-          aiEvents.forEach((event) => {
+        // ✅ THÊM AI EVENTS MỚI
+        let addedCount = 0;
+        aiEvents.forEach((event) => {
+          try {
             this.calendar.addEvent(event);
-          });
-
-          // Refresh calendar để hiển thị
-          this.calendar.render();
-
-          // Navigate to first AI event
-          if (aiEvents.length > 0) {
-            const firstEventDate = new Date(aiEvents[0].start);
-            this.calendar.gotoDate(firstEventDate);
+            addedCount++;
+          } catch (error) {
+            console.error("❌ Error adding event:", event.title, error);
           }
+        });
+
+        console.log(`✅ Added ${addedCount}/${aiEvents.length} events`);
+
+        // ✅ REFRESH CALENDAR ĐỂ HIỂN THỊ
+        this.calendar.render();
+
+        // ✅ NAVIGATE TO FIRST AI EVENT
+        if (aiEvents.length > 0) {
+          const firstEventDate = new Date(aiEvents[0].start);
+          this.calendar.gotoDate(firstEventDate);
+          console.log("📅 Navigated to first event:", firstEventDate);
         }
 
         if (Utils && Utils.showToast) {
-          Utils.showToast(
-            `✅ Đã thêm ${aiEvents.length} đề xuất từ AI`,
-            "success"
-          );
+          Utils.showToast(`✅ Đã thêm ${addedCount} đề xuất từ AI`, "success");
         }
 
         console.log("✅ AI suggestions loaded successfully");
@@ -220,9 +246,9 @@
       } catch (err) {
         console.error("❌ Error loading AI suggestions:", err);
         if (Utils && Utils.showToast) {
-          Utils.showToast("Lỗi tải đề xuất AI", "error");
+          Utils.showToast("Lỗi tải đề xuất AI: " + err.message, "error");
         }
-        return [];
+        throw err; // ✅ THROW ERROR ĐỂ HANDLER BIẾT
       }
     },
 
@@ -317,28 +343,6 @@
         modal.style.display = "none";
         document.body.classList.remove("modal-open");
         console.log("✅ Modal closed");
-      }
-    },
-
-    /**
-     * Hiển thị lỗi trong modal
-     */
-    showModalError(message) {
-      const modalBody = document.querySelector(
-        "#aiSuggestionModal .ai-modal-body"
-      );
-      if (modalBody) {
-        modalBody.innerHTML = `
-      <div class="error-state" style="text-align: center; padding: 40px;">
-        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #EF4444; margin-bottom: 20px;"></i>
-        <p style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">Không thể tải dữ liệu</p>
-        <p style="color: #666; margin-bottom: 20px;">${message}</p>
-        <button class="btn btn-primary" onclick="AIModule.openAiSuggestionModal()" style="padding: 10px 20px; background: #3B82F6; color: white; border: none; border-radius: 8px; cursor: pointer;">
-          <i class="fas fa-redo"></i>
-          Thử lại
-        </button>
-      </div>
-    `;
       }
     },
 
@@ -450,28 +454,6 @@
           AIHandler.populateAIModal();
         }
       }, 300);
-    },
-
-    /**
-     * Hiển thị lỗi trong modal
-     */
-    showModalError(message) {
-      const modalBody = document.querySelector(
-        "#aiSuggestionModal .ai-modal-body"
-      );
-      if (modalBody) {
-        modalBody.innerHTML = `
-          <div class="error-state">
-            <i class="fas fa-exclamation-triangle"></i>
-            <p>Không thể tải dữ liệu</p>
-            <p class="text-sm">${message}</p>
-            <button class="retry-btn" onclick="AIModule.openAiSuggestionModal()">
-              <i class="fas fa-redo"></i>
-              Thử lại
-            </button>
-          </div>
-        `;
-      }
     },
 
     // ==========================================================
@@ -770,8 +752,240 @@
       }
     },
 
+    // THAY THẾ hàm refreshFromDatabase trong aiModule.js
+    async refreshFromDatabase() {
+      try {
+        console.log("🔄 Refreshing AI calendar from database...");
+
+        if (!this.calendar) {
+          console.log("Calendar not ready, calling init()...");
+          await this.init();
+          return;
+        }
+
+        // 1. Lấy tất cả events từ database (bao gồm cả thường và AI)
+        const allEvents = await this.loadEventsForAI();
+
+        // 2. Lấy AI events riêng
+        const aiEvents = await this.loadAIEventsFromDatabase();
+
+        console.log(
+          `📊 Events loaded: ${allEvents.length} total, ${aiEvents.length} AI`
+        );
+
+        // 3. Xóa tất cả events cũ trong calendar
+        const existingEvents = this.calendar.getEvents();
+        existingEvents.forEach((event) => {
+          try {
+            event.remove();
+          } catch (e) {
+            // Ignore errors
+          }
+        });
+
+        // 4. Thêm tất cả events mới (gộp cả thường và AI)
+        // Ưu tiên AI events (tránh trùng lặp)
+        const uniqueEvents = [];
+        const addedIds = new Set();
+
+        // Thêm AI events trước
+        aiEvents.forEach((event) => {
+          if (event.id && !addedIds.has(event.id)) {
+            try {
+              this.calendar.addEvent(event);
+              uniqueEvents.push(event);
+              addedIds.add(event.id);
+            } catch (error) {
+              console.error("Error adding AI event:", error);
+            }
+          }
+        });
+
+        // Thêm các events thường (không phải AI)
+        allEvents.forEach((event) => {
+          if (
+            event.id &&
+            !addedIds.has(event.id) &&
+            !event.extendedProps?.aiSuggested
+          ) {
+            try {
+              this.calendar.addEvent(event);
+              uniqueEvents.push(event);
+              addedIds.add(event.id);
+            } catch (error) {
+              console.error("Error adding normal event:", error);
+            }
+          }
+        });
+
+        // 5. Lưu AI events vào memory
+        this.suggestedEvents = aiEvents;
+
+        // 6. Render lại calendar
+        this.calendar.render();
+
+        // 7. Cập nhật title
+        this.updateCalendarTitle();
+
+        console.log(`✅ Refreshed with ${uniqueEvents.length} unique events`);
+
+        return uniqueEvents.length;
+      } catch (error) {
+        console.error("❌ Error refreshing from database:", error);
+        return 0;
+      }
+    },
+
+    // THÊM HÀM MỚI: Tải AI suggestions từ database
+    async loadAISuggestionsFromDB() {
+      try {
+        console.log("🤖 Loading AI suggestions from database...");
+
+        if (!Utils?.makeRequest) {
+          console.warn("Utils.makeRequest không tồn tại");
+          return [];
+        }
+
+        // API endpoint mới để lấy AI suggestions
+        const res = await Utils.makeRequest("/api/calendar/ai-events", "GET");
+
+        if (!res.success || !Array.isArray(res.data)) return [];
+
+        const aiEvents = res.data.map((ev) => ({
+          id: ev.MaLichTrinh || ev.ID || `ai-${ev.taskId}-${Date.now()}`,
+          title: ev.TieuDe || ev.title || `Công việc #${ev.taskId}`,
+          start: ev.GioBatDau || ev.start,
+          end: ev.GioKetThuc || ev.end,
+          backgroundColor: ev.Color || ev.color || "#8B5CF6",
+          borderColor: ev.Color || ev.color || "#7c3aed",
+          classNames: ["event-ai-suggested"],
+          extendedProps: {
+            note: ev.GhiChu || ev.reason || "AI đề xuất",
+            completed: ev.DaHoanThanh === 1,
+            taskId: ev.MaCongViec || ev.taskId,
+            aiSuggested: true, // Đánh dấu đây là AI suggestion
+            reason: ev.reason || "",
+            durationMinutes: ev.durationMinutes || 60,
+            priority: ev.priority || "medium",
+            // ⭐ GIỮ LẠI MÀU TỪ DATABASE
+            originalColor: ev.Color || ev.color,
+          },
+        }));
+
+        console.log(`✅ Loaded ${aiEvents.length} AI events from database`);
+        return aiEvents;
+      } catch (err) {
+        console.error("❌ Load AI suggestions error:", err);
+        return [];
+      }
+    },
+
+    async loadAIEventsFromDatabase() {
+      try {
+        console.log("🤖 Loading AI events from database (AI_DeXuat = 1)...");
+
+        if (!Utils?.makeRequest) {
+          console.warn("Utils.makeRequest không tồn tại");
+          return [];
+        }
+
+        // Gọi API endpoint mới hoặc sửa query
+        const res = await Utils.makeRequest("/api/calendar/events", "GET");
+
+        if (!res.success || !Array.isArray(res.data)) return [];
+
+        // Lọc các event có AI_DeXuat = true hoặc được AI đề xuất
+        const aiEvents = res.data.filter(
+          (ev) =>
+            ev.extendedProps?.aiSuggested === true ||
+            ev.AI_DeXuat === true ||
+            ev.isAISuggestion === true
+        );
+
+        console.log(`✅ Found ${aiEvents.length} AI events in database`);
+
+        // Chuyển đổi sang định dạng calendar
+        const calendarEvents = aiEvents.map((ev) => {
+          return {
+            id: ev.MaLichTrinh || ev.ID || `ai-${Date.now()}-${Math.random()}`,
+            title: ev.TieuDe || ev.title || "AI Đề xuất",
+            start: ev.ThoiGianBatDau || ev.start,
+            end: ev.ThoiGianKetThuc || ev.end,
+            backgroundColor: ev.MaMau || ev.Color || "#8B5CF6",
+            borderColor: ev.MaMau || ev.Color || "#7c3aed",
+            classNames: ["event-ai-suggested"],
+            extendedProps: {
+              note: ev.GhiChu || ev.reason || "AI đề xuất",
+              completed: ev.DaHoanThanh === 1,
+              taskId: ev.MaCongViec || ev.taskId,
+              aiSuggested: true,
+              reason: ev.reason || "",
+              durationMinutes: ev.durationMinutes || 60,
+              priority: ev.priority || "medium",
+              originalColor: ev.MaMau || ev.Color,
+            },
+          };
+        });
+
+        return calendarEvents;
+      } catch (err) {
+        console.error("❌ Error loading AI events from database:", err);
+        return [];
+      }
+    },
+
+    // THÊM: Hàm để lưu AI suggestions vào database (đã có trong AIHandler)
+    async saveAISuggestions(suggestions) {
+      try {
+        console.log(`💾 Saving ${suggestions.length} AI suggestions...`);
+
+        // Gọi AIHandler để lưu vào database
+        if (window.AIHandler && window.AIHandler.saveAISuggestionsToDatabase) {
+          const result = await AIHandler.saveAISuggestionsToDatabase(
+            suggestions
+          );
+          console.log("✅ AI suggestions saved:", result);
+          return result;
+        }
+
+        console.warn("⚠️ AIHandler not available for saving suggestions");
+        return { success: false, message: "AIHandler not available" };
+      } catch (error) {
+        console.error("❌ Error saving AI suggestions:", error);
+        throw error;
+      }
+    },
+
     getCalendar() {
       return this.calendar;
+    },
+
+    restoreCalendar() {
+      if (!this.calendar) return;
+
+      console.log("🤖 Restoring AI calendar...");
+
+      const aiCalendar = document.getElementById(this.calendarElementId);
+      if (aiCalendar) {
+        // Hiển thị lại calendar
+        aiCalendar.style.opacity = "1";
+        aiCalendar.style.pointerEvents = "auto";
+        aiCalendar.style.position = "relative";
+        aiCalendar.style.left = "0";
+
+        // Khôi phục view nếu có
+        if (this.lastView && this.calendar.view.type !== this.lastView) {
+          this.changeView(this.lastView);
+        }
+
+        // Khôi phục ngày nếu có
+        if (this.lastDate) {
+          this.calendar.gotoDate(this.lastDate);
+        }
+
+        // Refresh nếu cần
+        this.refreshUI();
+      }
     },
   };
 

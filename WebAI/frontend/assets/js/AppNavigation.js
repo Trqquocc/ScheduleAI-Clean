@@ -50,6 +50,61 @@
       console.log(`   Current section: ${this.currentSection}`);
     },
 
+    // THAY THẾ hàm cleanupCurrentSection trong AppNavigation.js
+    async cleanupCurrentSection() {
+      if (!this.currentSection) return;
+
+      console.log(`🧹 Cleaning up: ${this.currentSection}`);
+
+      const cleanupMap = {
+        schedule: () => {
+          if (window.CalendarModule && CalendarModule.destroy) {
+            CalendarModule.destroy();
+          }
+        },
+        work: () => {
+          if (window.WorkManager && WorkManager.cleanup) {
+            WorkManager.cleanup();
+          }
+        },
+        salary: () => {
+          if (window.SalaryManager && SalaryManager.cleanup) {
+            SalaryManager.cleanup();
+          }
+        },
+        profile: () => {
+          if (window.ProfileManager && ProfileManager.cleanup) {
+            ProfileManager.cleanup();
+          }
+        },
+        ai: () => {
+          // ⚠️ QUAN TRỌNG: KHÔNG destroy AI calendar khi chuyển tab
+          // Chỉ ẩn nó đi và lưu trạng thái
+          console.log("🤖 AI tab: Keeping calendar alive, just hiding");
+
+          // Chỉ ẩn calendar container (không destroy)
+          const aiCalendar = document.getElementById("ai-calendar");
+          if (aiCalendar && window.AIModule && AIModule.calendar) {
+            // Lưu trạng thái hiện tại
+            if (AIModule.calendar) {
+              AIModule.lastView = AIModule.currentView;
+              AIModule.lastDate = AIModule.calendar.getDate();
+            }
+
+            // Chỉ ẩn đi (không destroy)
+            aiCalendar.style.opacity = "0";
+            aiCalendar.style.pointerEvents = "none";
+            aiCalendar.style.position = "absolute";
+            aiCalendar.style.left = "-9999px";
+          }
+        },
+      };
+
+      if (cleanupMap[this.currentSection]) {
+        cleanupMap[this.currentSection]();
+      }
+    },
+
     ensureSingleActiveSection() {
       let activeFound = false;
       this.sections.forEach((section) => {
@@ -103,47 +158,42 @@
     },
 
     async navigateToSection(sectionName) {
-      console.log(`🔄 Navigating to section: ${sectionName}`);
+      try {
+        console.log(`🔄 Navigating to section: ${sectionName}`);
 
-      await this.cleanupCurrentSection();
-      this.updateNavButtons(sectionName);
-      this.toggleSections(sectionName);
-      await this.loadAndInitSection(sectionName);
+        const previousSection = this.currentSection;
 
-      this.currentSection = sectionName;
-      console.log(`✅ Navigation to ${sectionName} completed`);
-    },
+        await this.cleanupCurrentSection();
+        this.updateNavButtons(sectionName);
+        this.toggleSections(sectionName);
+        await this.loadAndInitSection(sectionName);
 
-    async cleanupCurrentSection() {
-      if (!this.currentSection) return;
+        this.currentSection = sectionName;
 
-      console.log(`🧹 Cleaning up: ${this.currentSection}`);
+        // ✅ DISPATCH CUSTOM EVENT KHI CHUYỂN TAB
+        const event = new CustomEvent("section-changed", {
+          detail: {
+            section: sectionName,
+            previousSection: previousSection,
+            timestamp: new Date().toISOString(),
+          },
+        });
+        document.dispatchEvent(event);
+        console.log(`📢 Dispatched section-changed event for: ${sectionName}`);
 
-      const cleanupMap = {
-        schedule: () => {
-          if (window.CalendarModule && CalendarModule.destroy) {
-            CalendarModule.destroy();
-          }
-        },
-        work: () => {
-          if (window.WorkManager && WorkManager.cleanup) {
-            WorkManager.cleanup();
-          }
-        },
-        salary: () => {
-          if (window.SalaryManager && SalaryManager.cleanup) {
-            SalaryManager.cleanup();
-          }
-        },
-        profile: () => {
-          if (window.ProfileManager && ProfileManager.cleanup) {
-            ProfileManager.cleanup();
-          }
-        },
-      };
+        console.log(`✅ Navigation to ${sectionName} completed`);
+      } catch (error) {
+        console.error(`❌ Navigation to ${sectionName} failed:`, error);
 
-      if (cleanupMap[this.currentSection]) {
-        cleanupMap[this.currentSection]();
+        // Optional: Dispatch an error event
+        const errorEvent = new CustomEvent("section-change-error", {
+          detail: {
+            section: sectionName,
+            error: error.message,
+            timestamp: new Date().toISOString(),
+          },
+        });
+        document.dispatchEvent(errorEvent);
       }
     },
 
@@ -218,7 +268,18 @@
         setTimeout(() => window.App.updateUserInfo(), 100);
       }
 
+      if (this.lastDate) {
+        this.calendar.gotoDate(this.lastDate);
+      }
+
+      if (sectionName === "ai" && window.AIModule && AIModule.restoreCalendar) {
+        setTimeout(() => {
+          AIModule.restoreCalendar();
+        }, 200);
+      }
+
       window.scrollTo(0, 0);
+      this.refreshUI();
     },
 
     async refreshCurrentSection() {

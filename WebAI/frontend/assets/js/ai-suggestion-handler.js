@@ -467,14 +467,217 @@ const AIHandler = {
 
       console.log(`📅 Adding ${suggestions.length} events to calendar...`);
 
+      // ✅ CHỜ AIModule SẴN SÀNG
+      await this.waitForAIModule();
+
       if (window.AIModule && window.AIModule.loadAISuggestions) {
+        console.log("🔄 Calling AIModule.loadAISuggestions...");
         await AIModule.loadAISuggestions(suggestions);
+        console.log("✅ Events added to AI calendar successfully");
       } else {
         console.warn("⚠️ AIModule not available for adding events");
+        this.showError("Không thể thêm lịch vào AI calendar");
       }
     } catch (error) {
       console.error("❌ Error adding events to calendar:", error);
+      this.showError("Lỗi thêm sự kiện vào lịch: " + error.message);
     }
+  },
+
+  /**
+   * CHỜ AIModule SẴN SÀNG
+   */
+  async waitForAIModule(timeout = 10000) {
+    return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+
+      const check = () => {
+        if (
+          window.AIModule &&
+          window.AIModule.isInitialized &&
+          window.AIModule.calendar
+        ) {
+          console.log("✅ AIModule is ready");
+          resolve(true);
+        } else if (Date.now() - startTime > timeout) {
+          console.error("❌ AIModule timeout");
+          reject(new Error("AIModule không sẵn sàng sau " + timeout + "ms"));
+        } else {
+          console.log("⏳ Waiting for AIModule...");
+          setTimeout(check, 200);
+        }
+      };
+
+      check();
+    });
+  },
+
+  async saveAISuggestionsToDatabase(suggestions) {
+    try {
+      console.log(
+        `💾 Saving ${suggestions.length} AI suggestions to database...`
+      );
+
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        throw new Error("Không tìm thấy token đăng nhập");
+      }
+
+      const savedEvents = [];
+      let successCount = 0;
+      let failCount = 0;
+
+      // Lưu từng suggestion vào database
+      for (const suggestion of suggestions) {
+        try {
+          const start = new Date(suggestion.scheduledTime);
+          const end = new Date(
+            start.getTime() + (suggestion.durationMinutes || 60) * 60000
+          );
+
+          const payload = {
+            title: suggestion.taskTitle || `Công việc #${suggestion.taskId}`,
+            start: start.toISOString(),
+            end: end.toISOString(),
+            note: suggestion.reason || "AI đề xuất",
+            taskId: suggestion.taskId || null,
+            completed: false,
+            color: suggestion.color || "#8B5CF6",
+            // ✅ ĐÁNH DẤU ĐÂY LÀ AI SUGGESTION
+            isAISuggestion: true,
+          };
+
+          console.log(`💾 Saving event for task ${suggestion.taskId}...`);
+
+          const response = await fetch("/api/calendar/events", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            savedEvents.push({
+              ...suggestion,
+              eventId: result.eventId || result.data?.id,
+            });
+            successCount++;
+            console.log(`✅ Saved event ${successCount}/${suggestions.length}`);
+          } else {
+            const errorText = await response.text();
+            console.error(`❌ Failed to save event:`, errorText);
+            failCount++;
+          }
+        } catch (eventError) {
+          console.error(`❌ Error saving event:`, eventError);
+          failCount++;
+        }
+      }
+
+      console.log(
+        `💾 Save complete: ${successCount} success, ${failCount} failed`
+      );
+
+      if (successCount === 0) {
+        throw new Error("Không thể lưu AI suggestions vào database");
+      }
+
+      return {
+        success: true,
+        savedCount: successCount,
+        failedCount: failCount,
+        savedEvents: savedEvents,
+      };
+    } catch (error) {
+      console.error("❌ Error saving AI suggestions:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * ✅ CẬP NHẬT handleSuccessResult ĐỂ LƯU VÀO DATABASE
+   */
+  async handleSuccessResult(result, formData) {
+    console.log("✅ AI success:", result);
+
+    try {
+      // 1. Hiển thị kết quả trong modal
+      this.displaySuccessResults(result.data);
+
+      if (result.data?.suggestions && result.data.suggestions.length > 0) {
+        // 2. ✅ LƯU VÀO DATABASE TRƯỚC
+        console.log("💾 Saving to database...");
+        const saveResult = await this.saveAISuggestionsToDatabase(
+          result.data.suggestions
+        );
+
+        console.log(
+          `✅ Saved ${saveResult.savedCount}/${result.data.suggestions.length} events to database`
+        );
+
+        // 3. Chờ AIModule sẵn sàng
+        console.log("🔄 Waiting for AIModule...");
+        await this.waitForAIModule();
+
+        // 4. ✅ RELOAD AI CALENDAR TỪ DATABASE
+        if (window.AIModule && window.AIModule.refreshFromDatabase) {
+          console.log("🔄 Reloading AI calendar from database...");
+          await AIModule.refreshFromDatabase();
+        }
+
+        // 5. Hiển thị thông báo thành công
+        this.showSuccess(
+          `🎉 Đã tạo và lưu ${saveResult.savedCount} lịch trình AI!`
+        );
+
+        // 6. Đóng modal và chuyển sang tab AI
+        setTimeout(() => {
+          this.closeModal();
+
+          setTimeout(() => {
+            const aiTab = document.querySelector('[data-tab="ai"]');
+            if (aiTab) {
+              console.log("🔄 Switching to AI tab...");
+              aiTab.click();
+            }
+          }, 500);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("❌ Error in handleSuccessResult:", error);
+      this.showError("Đã tạo lịch nhưng có lỗi: " + error.message);
+    }
+  },
+
+  /**
+   * CHỜ AIModule SẴN SÀNG
+   */
+  async waitForAIModule(timeout = 10000) {
+    return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+
+      const check = () => {
+        if (
+          window.AIModule &&
+          window.AIModule.isInitialized &&
+          window.AIModule.calendar
+        ) {
+          console.log("✅ AIModule is ready");
+          resolve(true);
+        } else if (Date.now() - startTime > timeout) {
+          console.error("❌ AIModule timeout");
+          reject(new Error("AIModule không sẵn sàng sau " + timeout + "ms"));
+        } else {
+          console.log("⏳ Waiting for AIModule...");
+          setTimeout(check, 200);
+        }
+      };
+
+      check();
+    });
   },
 
   /**

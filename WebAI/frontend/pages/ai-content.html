@@ -44,7 +44,7 @@
           class="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all shadow-md flex items-center gap-2"
         >
           <i class="fas fa-magic"></i>
-          <span>Tham Kháº£o AI</span>
+          <span>Tham Khảo AI</span>
         </button>
 
         <!-- View Switcher -->
@@ -83,31 +83,45 @@
         <div
           class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"
         ></div>
-        <p class="text-lg font-medium">Äang táº£i lá»‹ch trÃ¬nh AI...</p>
+        <p class="text-lg font-medium">Đang tải lịch trình AI...</p>
         <p class="text-sm mt-2 text-gray-400">
-          Nháº¥n "Tham Kháº£o AI" Ä‘á»ƒ táº¡o lá»‹ch trÃ¬nh thÃ´ng minh
+          Nhấn "Tham Khảo AI" để tạo lịch trình thông minh
         </p>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Load thÆ° viá»‡n cáº§n thiáº¿t -->
-<script src="js/installHook.js"></script>
-<script src="js/utils.js"></script>
-
 <script>
   (function () {
-    console.log(
-      "ðŸ¤– AI content loaded â€“ with unique IDs to avoid conflicts"
-    );
+    console.log("🤖 AI content loaded – with unique IDs to avoid conflicts");
 
-    // Äá»£i AIModule load (tá»« componentLoader hoáº·c global)
+    // Biến kiểm soát trạng thái khởi tạo
+    let isInitializing = false;
+    let isInitialized = false;
+
+    // Đợi AIModule load (từ componentLoader hoặc global)
     function waitForAIModule() {
       if (window.AIModule) {
-        console.log("âœ… AIModule found");
+        console.log("✅ AIModule found");
 
-        // Config IDs riÃªng cho trang AI (KHÃ”NG Ä‘á»¥ng vá»›i lá»‹ch chÃ­nh)
+        // Kiểm tra nếu đang khởi tạo thì không làm gì
+        if (isInitializing) {
+          console.log("🔄 AIModule is already initializing, skipping...");
+          return;
+        }
+
+        // Kiểm tra nếu đã khởi tạo rồi thì chỉ refresh UI
+        if (isInitialized && AIModule.isInitialized && AIModule.calendar) {
+          console.log("🔄 AIModule already initialized, just refreshing UI...");
+          AIModule.refreshUI();
+          return;
+        }
+
+        // Đánh dấu đang khởi tạo
+        isInitializing = true;
+
+        // Config IDs riêng cho trang AI (KHÔNG đụng với lịch chính)
         AIModule.calendarElementId = "ai-calendar";
         AIModule.titleElementId = "ai-calendar-title";
         AIModule.prevBtnId = "ai-cal-prev-btn";
@@ -117,14 +131,48 @@
         AIModule.weekBtnId = "ai-cal-week-view";
         AIModule.monthBtnId = "ai-cal-month-view";
 
-        // Trigger init
-        AIModule.init();
+        // ✅ Trigger init
+        AIModule.init()
+          .then(() => {
+            console.log("✅ AIModule initialized successfully");
+            isInitialized = true;
+            isInitializing = false;
+          })
+          .catch((error) => {
+            console.error("❌ AIModule init failed:", error);
+            isInitialized = false;
+            isInitializing = false;
+          });
       } else {
-        console.log("â³ AIModule not yet loaded, waiting...");
+        console.log("⏳ AIModule not yet loaded, waiting...");
         setTimeout(waitForAIModule, 100);
       }
     }
 
-    waitForAIModule();
+    // Chỉ gọi một lần duy nhất
+    setTimeout(waitForAIModule, 300);
+
+    // ✅ LISTEN FOR TAB CHANGES - REFRESH WHEN AI TAB IS SHOWN (MỘT LẦN DUY NHẤT)
+    let tabChangeListenerAdded = false;
+    if (!tabChangeListenerAdded) {
+      tabChangeListenerAdded = true;
+      document.addEventListener(
+        "section-changed",
+        (e) => {
+          if (e.detail && e.detail.section === "ai") {
+            console.log("🎯 AI tab activated, refreshing calendar...");
+
+            // Đợi 1 giây để đảm bảo DOM đã sẵn sàng
+            setTimeout(() => {
+              if (window.AIModule && AIModule.refreshFromDatabase) {
+                console.log("🔄 Refreshing AI calendar from database...");
+                AIModule.refreshFromDatabase();
+              }
+            }, 1000);
+          }
+        },
+        { once: false }
+      );
+    }
   })();
 </script>
