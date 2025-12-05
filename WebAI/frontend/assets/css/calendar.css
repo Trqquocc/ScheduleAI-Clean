@@ -514,3 +514,164 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
 }
+
+@keyframes pulse-success {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+}
+
+.event-success-pulse {
+  animation: pulse-success 1s ease-in-out;
+}
+
+/* Hiệu ứng cho event bị lỗi */
+@keyframes shake-error {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-3px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+.event-error-shake {
+  animation: shake-error 0.5s ease-in-out;
+}
+
+/* Style cho các event trong calendar */
+.fc-event {
+  transition: all 0.3s ease;
+}
+
+.fc-event:hover {
+  transform: scale(1.02);
+  z-index: 1000;
+}
+
+/* Style cho task đang được kéo */
+.dragging-task {
+  opacity: 0.7;
+  transform: scale(0.95);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Style cho vùng drop hợp lệ */
+.fc-highlight {
+  background-color: rgba(34, 197, 94, 0.1) !important;
+  border-color: rgb(34, 197, 94) !important;
+}
+
+/* Toast animations */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-fade-out {
+  animation: fade-out 0.3s ease-in forwards;
+}
+
+/* Hiệu ứng cho modal và xóa */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes shrinkOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    max-height: 100px;
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0);
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Hiệu ứng nhấp nháy cảnh báo */
+@keyframes pulseWarning {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+.pulse-warning {
+  animation: pulseWarning 2s infinite;
+}
+
+/* Scrollbar cho modal */
+#eventDetailModal .overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f3f4f6;
+}
+
+#eventDetailModal .overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+#eventDetailModal .overflow-y-auto::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+#eventDetailModal .overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+#eventDetailModal .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

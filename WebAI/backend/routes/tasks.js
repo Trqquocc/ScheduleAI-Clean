@@ -14,6 +14,14 @@ const STATUS_MAP = {
   canceled: 3,
 };
 
+// Mapping màu theo độ ưu tiên
+const PRIORITY_COLORS = {
+  1: "#34D399", // Xanh lá - Thấp
+  2: "#60A5FA", // Xanh lam - Trung bình (mặc định)
+  3: "#FBBF24", // Vàng - Cao
+  4: "#F87171", // Đỏ - Rất cao
+};
+
 // Middleware xác thực JWT
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -59,7 +67,15 @@ router.get("/", authenticateToken, async (req, res) => {
         cv.MucDoTapTrung,
         cv.ThoiDiemThichHop,
         cv.LuongTheoGio,
-        lc.MauSac
+        -- Thay vì lấy màu từ LoaiCongViec, chúng ta sẽ lấy theo độ ưu tiên
+        CASE cv.MucDoUuTien
+          WHEN 1 THEN '#34D399'  -- Thấp: Xanh lá
+          WHEN 2 THEN '#60A5FA'  -- Trung bình: Xanh lam
+          WHEN 3 THEN '#FBBF24'  -- Cao: Vàng
+          WHEN 4 THEN '#F87171'  -- Rất cao: Đỏ
+          ELSE '#60A5FA'         -- Mặc định: Xanh lam
+        END AS MauSac,
+        lc.TenLoai  -- Vẫn lấy tên danh mục nếu cần
       FROM CongViec cv
       LEFT JOIN LoaiCongViec lc ON cv.MaLoai = lc.MaLoai
       WHERE cv.UserID = @userId
@@ -78,9 +94,17 @@ router.get("/", authenticateToken, async (req, res) => {
     query += ` ORDER BY cv.NgayTao DESC`;
     const result = await request.query(query);
 
+    // Thêm màu theo độ ưu tiên vào kết quả (đảm bảo có cả ở backend)
+    const tasks = result.recordset.map((task) => {
+      return {
+        ...task,
+        MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#60A5FA",
+      };
+    });
+
     res.json({
       success: true,
-      data: result.recordset,
+      data: tasks,
     });
   } catch (error) {
     console.error("Lỗi lấy công việc:", error);
@@ -181,9 +205,16 @@ router.post("/", authenticateToken, async (req, res) => {
         )
       `);
 
+    // Thêm màu theo độ ưu tiên vào response
+    const createdTask = result.recordset[0];
+    const responseTask = {
+      ...createdTask,
+      MauSac: PRIORITY_COLORS[createdTask.MucDoUuTien] || "#60A5FA",
+    };
+
     res.status(201).json({
       success: true,
-      data: result.recordset[0],
+      data: responseTask,
       message: "Tạo công việc thành công",
     });
   } catch (error) {
@@ -365,8 +396,7 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 
     const force = req.query.force === "true" || req.body.force === true;
     if (!force) {
-      await transaction.rollback();
-      return res.status(409).json({
+      return res.status(200).json({
         success: false,
         requireConfirmation: true,
         message: `Công việc "${taskTitle}" có ${scheduleCount} lịch trình`,
@@ -405,4 +435,5 @@ router.delete("/:id", authenticateToken, async (req, res) => {
     });
   }
 });
+
 module.exports = router;

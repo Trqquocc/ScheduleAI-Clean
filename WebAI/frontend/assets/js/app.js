@@ -339,6 +339,32 @@ window.debugApp = function () {
   console.log("Active section:", document.querySelector(".section.active"));
 };
 
+window.refreshUI = function () {
+  console.log("🔄 Global UI refresh...");
+
+  // Refresh user info
+  if (window.App && window.App.updateUserInfo) {
+    window.App.updateUserInfo();
+  }
+
+  // Refresh calendar drag & drop nếu đang ở schedule tab
+  if (window.CalendarModule && CalendarModule.refreshDragDrop) {
+    CalendarModule.refreshDragDrop();
+  }
+
+  // Refresh work tasks nếu đang ở work tab
+  if (window.WorkManager && WorkManager.loadTasks) {
+    WorkManager.loadTasks();
+  }
+
+  // Refresh icons
+  if (window.FontAwesome && FontAwesome.dom && FontAwesome.dom.i2svg) {
+    setTimeout(() => FontAwesome.dom.i2svg(), 100);
+  }
+
+  console.log("✅ UI refreshed");
+};
+
 window.testNav = function (section) {
   window.App?.testNavigation(section);
 };

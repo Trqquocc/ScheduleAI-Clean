@@ -55,10 +55,10 @@ router.post("/register", async (req, res) => {
 
     // Tạo 4 danh mục mặc định (đã chắc chắn chạy được vì IDENTITY đã OK)
     const defaultCats = [
-      { TenLoai: "Công việc", MauSac: "#3B82F6", MoTa: "Công việc hàng ngày" },
-      { TenLoai: "Cá nhân", MauSac: "#EF4444", MoTa: "Việc cá nhân" },
-      { TenLoai: "Học tập", MauSac: "#10B981", MoTa: "Học tập và phát triển" },
-      { TenLoai: "Sức khỏe", MauSac: "#F59E0B", MoTa: "Chăm sóc sức khỏe" },
+      { TenLoai: "Công việc", MoTa: "Công việc hàng ngày" },
+      { TenLoai: "Cá nhân", MoTa: "Việc cá nhân" },
+      { TenLoai: "Học tập", MoTa: "Học tập và phát triển" },
+      { TenLoai: "Sức khỏe", MoTa: "Chăm sóc sức khỏe" },
     ];
 
     for (const c of defaultCats) {
@@ -66,10 +66,9 @@ router.post("/register", async (req, res) => {
         .request()
         .input("UserID", sql.Int, newUser.UserID)
         .input("TenLoai", sql.NVarChar(100), c.TenLoai)
-        .input("MauSac", sql.NVarChar(7), c.MauSac)
         .input("MoTa", sql.NVarChar(255), c.MoTa)
         .query(
-          `INSERT INTO LoaiCongViec (UserID, TenLoai, MauSac, MoTa) VALUES (@UserID, @TenLoai, @MauSac, @MoTa)`
+          `INSERT INTO LoaiCongViec (UserID, TenLoai, MoTa) VALUES (@UserID, @TenLoai, @MoTa)`
         );
     }
 
@@ -149,7 +148,7 @@ router.post("/login", async (req, res) => {
           username: user.Username,
           email: user.Email,
           hoten: user.HOTen,
-          luongTheoGio: user.LuongTheoGio || 29000,
+          luongTheoGio: user.LuongTheoGio || 0,
         },
       },
     });

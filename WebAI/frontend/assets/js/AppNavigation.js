@@ -256,6 +256,7 @@
         }
       }
 
+      // Re-initialize modals và event handlers
       if (window.ModalManager) {
         setTimeout(() => {
           if (window.ModalManager.reinitializeEventHandlers) {
@@ -264,22 +265,44 @@
         }, 100);
       }
 
-      if (window.App) {
+      // Update user info
+      if (window.App && window.App.updateUserInfo) {
         setTimeout(() => window.App.updateUserInfo(), 100);
       }
 
-      if (this.lastDate) {
-        this.calendar.gotoDate(this.lastDate);
-      }
+      // Section-specific refresh logic
+      setTimeout(() => {
+        if (sectionName === "schedule" && window.CalendarModule) {
+          console.log("🔄 Refreshing calendar...");
+          CalendarModule.refreshEvents && CalendarModule.refreshEvents();
+          CalendarModule.refreshDragDrop && CalendarModule.refreshDragDrop();
+        } else if (sectionName === "work" && window.WorkManager) {
+          console.log("🔄 Refreshing work tasks...");
+          WorkManager.loadTasks && WorkManager.loadTasks();
 
-      if (sectionName === "ai" && window.AIModule && AIModule.restoreCalendar) {
-        setTimeout(() => {
-          AIModule.restoreCalendar();
-        }, 200);
-      }
+          // Setup drag & drop cho tasks mới
+          if (CalendarModule && CalendarModule.setupNativeDragDrop) {
+            setTimeout(() => {
+              CalendarModule.setupNativeDragDrop();
+              CalendarModule.setupExternalDraggable();
+            }, 500);
+          }
+        } else if (sectionName === "ai" && window.AIModule) {
+          console.log("🔄 Refreshing AI suggestions...");
+          AIModule.refreshSuggestions && AIModule.refreshSuggestions();
 
+          if (AIModule.restoreCalendar) {
+            setTimeout(() => {
+              AIModule.restoreCalendar();
+            }, 200);
+          }
+        }
+      }, 200);
+
+      // Scroll to top
       window.scrollTo(0, 0);
-      this.refreshUI();
+
+      console.log(`✅ Section ${sectionName} initialized successfully`);
     },
 
     async refreshCurrentSection() {

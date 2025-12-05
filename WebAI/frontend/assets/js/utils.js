@@ -252,66 +252,57 @@ if (typeof window.Utils === "undefined") {
      * @param {string} type - Loại thông báo: success, error, warning, info
      * @param {number} duration - Thời gian hiển thị (ms)
      */
-    showToast(message, type = "info", duration = 3500) {
-      // Xóa toast cũ nếu có
-      document.querySelectorAll(".app-toast").forEach((t) => {
-        if (t.dataset.autoRemove !== "false") t.remove();
-      });
+    // Cải thiện hàm showToast nếu cần
+    showToast: function (message, type = "info") {
+      const toastContainer =
+        document.getElementById("toast-container") ||
+        (() => {
+          const container = document.createElement("div");
+          container.id = "toast-container";
+          container.className = "fixed top-4 right-4 z-50 space-y-2";
+          document.body.appendChild(container);
+          return container;
+        })();
 
-      // Tạo toast mới
-      const toast = document.createElement("div");
-      toast.className = `app-toast fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-2xl text-white font-medium transform translate-x-full opacity-0 transition-all duration-300 flex items-center`;
-
-      // Màu sắc theo type
-      const colors = {
-        success: "bg-green-600",
-        error: "bg-red-600",
-        warning: "bg-yellow-500",
-        info: "bg-blue-600",
-      };
-
-      toast.classList.add(colors[type] || colors.info);
-
-      // Icon theo type
+      const toastId = "toast-" + Date.now();
       const icons = {
-        success: "✓",
-        error: "✗",
-        warning: "⚠",
-        info: "ℹ",
+        success: "✅",
+        error: "❌",
+        warning: "⚠️",
+        info: "ℹ️",
+        loading: "🔄",
       };
 
+      const colors = {
+        success: "bg-green-50 border-green-200 text-green-800",
+        error: "bg-red-50 border-red-200 text-red-800",
+        warning: "bg-yellow-50 border-yellow-200 text-yellow-800",
+        info: "bg-blue-50 border-blue-200 text-blue-800",
+        loading: "bg-gray-50 border-gray-200 text-gray-800",
+      };
+
+      const toast = document.createElement("div");
+      toast.id = toastId;
+      toast.className = `px-4 py-3 rounded-lg border shadow-lg flex items-center gap-3 ${colors[type]} animate-slide-in`;
       toast.innerHTML = `
-        <span class="mr-3 text-lg">${icons[type] || icons.info}</span>
-        <span class="flex-1">${message}</span>
-        <button class="ml-4 text-white opacity-70 hover:opacity-100 focus:outline-none" onclick="this.parentElement.remove()">
-          <i class="fas fa-times"></i>
-        </button>
-      `;
+    <span class="text-lg">${icons[type]}</span>
+    <span class="font-medium">${message}</span>
+  `;
 
-      document.body.appendChild(toast);
+      toastContainer.appendChild(toast);
 
-      // Hiển thị toast với animation
-      requestAnimationFrame(() => {
-        toast.style.transform = "translateX(0)";
-        toast.style.opacity = "1";
-      });
-
-      // Tự động xóa sau duration
-      if (duration > 0) {
+      // Auto remove after 3 seconds (5 seconds for success)
+      const duration = type === "success" ? 5000 : 3000;
+      setTimeout(() => {
+        toast.classList.add("animate-fade-out");
         setTimeout(() => {
-          if (toast.parentElement) {
-            toast.style.transform = "translateX(400px)";
-            toast.style.opacity = "0";
-            toast.addEventListener(
-              "transitionend",
-              () => {
-                if (toast.parentElement) toast.remove();
-              },
-              { once: true }
-            );
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
           }
-        }, duration);
-      }
+        }, 300);
+      }, duration);
+
+      return toastId;
     },
 
     /**

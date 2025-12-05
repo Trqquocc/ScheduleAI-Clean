@@ -1,9 +1,4 @@
 // frontend/assets/js/workManager.js
-/**
- * Work Manager - Manages work tasks and todo items
- * WRAPPED VERSION: Better container checks and error handling
- * UPDATED: Handle 409 confirmation for delete with force
- */
 
 (function () {
   "use strict";
@@ -100,6 +95,29 @@
       this.loadTasks();
     },
 
+    editTask(id) {
+      console.log(`✏️ Editing task ${id}`);
+
+      // Load task data từ server
+      Utils.makeRequest(`/api/tasks/${id}`, "GET")
+        .then((result) => {
+          if (result.success && result.data) {
+            // Mở modal edit với dữ liệu task
+            if (window.ModalManager && ModalManager.showCreateTaskModal) {
+              ModalManager.showCreateTaskModal(result.data);
+            } else {
+              Utils.showToast("Không thể mở chỉnh sửa", "error");
+            }
+          } else {
+            Utils.showToast("Không tìm thấy công việc", "error");
+          }
+        })
+        .catch((error) => {
+          console.error("❌ Error loading task:", error);
+          Utils.showToast("Lỗi tải công việc", "error");
+        });
+    },
+
     renderTasks(tasks) {
       const container = document.getElementById("work-items-container");
       if (!container) {
@@ -121,7 +139,7 @@
       }
 
       tasks.forEach((task) => {
-        const color = task.MauSac || "#3B82F6"; // Lấy từ join
+        const color = task.MauSac || "#3B82F6";
         const item = document.createElement("div");
         item.className =
           "work-item bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow";
@@ -207,7 +225,8 @@
           TrangThaiThucHien: completed ? 2 : 0,
         });
 
-        if (!result.ok) {
+        if (!result.success) {
+          // ĐỔI từ result.ok sang result.success
           throw new Error(result.message || "Cập nhật thất bại");
         }
 
@@ -230,11 +249,11 @@
           throw new Error("Utils module not available");
         }
 
-        // Gửi request xóa lần đầu (không force)
+        // Gửi request xóa lần đầu
         const result = await Utils.makeRequest(`/api/tasks/${id}`, "DELETE");
 
-        // Nếu 409: Yêu cầu confirm
-        if (result.status === 409 && result.requireConfirmation) {
+        // Kiểm tra nếu backend yêu cầu confirm
+        if (result.requireConfirmation) {
           const confirmMsg = `${result.message}\n\n${result.details}\n\nBạn có chắc muốn xóa?`;
 
           if (!confirm(confirmMsg)) {
@@ -242,15 +261,13 @@
             return;
           }
 
-          // Gửi lại với force=true qua query params
+          // Gửi lại với force=true QUA QUERY PARAM
           const forceResult = await Utils.makeRequest(
-            `/api/tasks/${id}`,
-            "DELETE",
-            null,
-            { force: "true" }
+            `/api/tasks/${id}?force=true`, // THÊM ?force=true vào URL
+            "DELETE"
           );
 
-          if (!forceResult.ok) {
+          if (!forceResult.success) {
             throw new Error(forceResult.message || "Xóa thất bại");
           }
 
@@ -260,7 +277,7 @@
         }
 
         // Nếu thành công ngay (không có lịch trình)
-        if (result.ok) {
+        if (result.success) {
           Utils.showToast(result.message || "Đã xóa công việc", "success");
           await this.loadTasks();
           return;

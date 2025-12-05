@@ -1,5 +1,5 @@
 <div class="h-full w-full bg-white">
-  <!-- Calendar Navigation Bar (IDs riÃªng cho AI) -->
+  <!-- Calendar Navigation Bar -->
   <nav class="bg-white border-b border-gray-200 px-6 py-4 w-full">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-4">
@@ -8,22 +8,22 @@
           <button
             id="ai-cal-prev-btn"
             class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            title="ThÃ¡ng trÆ°á»›c"
+            title="Tháng trước"
           >
-            <i class="fas fa-chevron-left"></i>
+            <
           </button>
           <button
             id="ai-cal-today-btn"
             class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
           >
-            HÃ´m nay
+            Hôm nay
           </button>
           <button
             id="ai-cal-next-btn"
             class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            title="ThÃ¡ng sau"
+            title="Tháng sau"
           >
-            <i class="fas fa-chevron-right"></i>
+            >
           </button>
         </div>
 
@@ -32,18 +32,17 @@
           id="ai-calendar-title"
           class="text-xl font-semibold text-gray-800 min-w-[200px]"
         >
-          ThÃ¡ng 11 nÄƒm 2025
+          Tháng 11 năm 2025
         </div>
       </div>
 
-      <!-- NÃºt AI vÃ  View Switcher -->
+      <!-- Nút AI và View Switcher -->
       <div class="flex items-center gap-4">
-        <!-- NÃºt Tham kháº£o AI -->
+        <!-- Nút Tham khảo AI -->
         <button
           id="ai-suggest-btn"
           class="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all shadow-md flex items-center gap-2"
         >
-          <i class="fas fa-magic"></i>
           <span>Tham Khảo AI</span>
         </button>
 
@@ -54,28 +53,28 @@
             class="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-white transition-colors"
             data-view="timeGridDay"
           >
-            NgÃ y
+            Ngày
           </button>
           <button
             id="ai-cal-week-view"
             class="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-white transition-colors"
             data-view="timeGridWeek"
           >
-            Tuáº§n
+            Tuần
           </button>
           <button
             id="ai-cal-month-view"
             class="px-4 py-2 rounded-md text-sm font-medium bg-white text-gray-900 shadow-sm transition-colors"
             data-view="dayGridMonth"
           >
-            ThÃ¡ng
+            Tháng
           </button>
         </div>
       </div>
     </div>
   </nav>
 
-  <!-- Calendar Container vá»›i ID riÃªng cho AI -->
+  <!-- Calendar Container với ID riêng cho AI -->
   <div id="ai-calendar" class="flex-1 overflow-hidden bg-white">
     <!-- Loading spinner -->
     <div class="flex items-center justify-center h-full bg-gray-50">
@@ -94,26 +93,20 @@
 
 <script>
   (function () {
-    console.log("🤖 AI content loaded – with unique IDs to avoid conflicts");
-
     // Biến kiểm soát trạng thái khởi tạo
     let isInitializing = false;
     let isInitialized = false;
 
-    // Đợi AIModule load (từ componentLoader hoặc global)
+    // Đợi AIModule load
     function waitForAIModule() {
       if (window.AIModule) {
-        console.log("✅ AIModule found");
-
         // Kiểm tra nếu đang khởi tạo thì không làm gì
         if (isInitializing) {
-          console.log("🔄 AIModule is already initializing, skipping...");
           return;
         }
 
         // Kiểm tra nếu đã khởi tạo rồi thì chỉ refresh UI
         if (isInitialized && AIModule.isInitialized && AIModule.calendar) {
-          console.log("🔄 AIModule already initialized, just refreshing UI...");
           AIModule.refreshUI();
           return;
         }
@@ -121,7 +114,7 @@
         // Đánh dấu đang khởi tạo
         isInitializing = true;
 
-        // Config IDs riêng cho trang AI (KHÔNG đụng với lịch chính)
+        // Config IDs riêng cho trang AI
         AIModule.calendarElementId = "ai-calendar";
         AIModule.titleElementId = "ai-calendar-title";
         AIModule.prevBtnId = "ai-cal-prev-btn";
@@ -131,28 +124,24 @@
         AIModule.weekBtnId = "ai-cal-week-view";
         AIModule.monthBtnId = "ai-cal-month-view";
 
-        // ✅ Trigger init
+        // Trigger init
         AIModule.init()
           .then(() => {
-            console.log("✅ AIModule initialized successfully");
             isInitialized = true;
             isInitializing = false;
           })
           .catch((error) => {
-            console.error("❌ AIModule init failed:", error);
             isInitialized = false;
             isInitializing = false;
           });
       } else {
-        console.log("⏳ AIModule not yet loaded, waiting...");
         setTimeout(waitForAIModule, 100);
       }
     }
 
-    // Chỉ gọi một lần duy nhất
     setTimeout(waitForAIModule, 300);
 
-    // ✅ LISTEN FOR TAB CHANGES - REFRESH WHEN AI TAB IS SHOWN (MỘT LẦN DUY NHẤT)
+    // LISTEN FOR TAB CHANGES - REFRESH WHEN AI TAB IS SHOWN
     let tabChangeListenerAdded = false;
     if (!tabChangeListenerAdded) {
       tabChangeListenerAdded = true;
@@ -160,12 +149,8 @@
         "section-changed",
         (e) => {
           if (e.detail && e.detail.section === "ai") {
-            console.log("🎯 AI tab activated, refreshing calendar...");
-
-            // Đợi 1 giây để đảm bảo DOM đã sẵn sàng
             setTimeout(() => {
               if (window.AIModule && AIModule.refreshFromDatabase) {
-                console.log("🔄 Refreshing AI calendar from database...");
                 AIModule.refreshFromDatabase();
               }
             }, 1000);

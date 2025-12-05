@@ -1,3 +1,5 @@
+// Quản lý danh mục công việc với xác thực người dùng
+
 const express = require("express");
 const router = express.Router();
 const { dbPoolPromise, sql } = require("../config/database");
@@ -31,7 +33,7 @@ router.get("/", async (req, res) => {
     const pool = await dbPoolPromise;
     const result = await pool.request().input("UserID", sql.Int, req.userId)
       .query(`
-        SELECT MaLoai, TenLoai, MauSac, MoTa
+        SELECT MaLoai, TenLoai, MoTa
         FROM LoaiCongViec
         WHERE UserID = @UserID
       `);
@@ -46,7 +48,7 @@ router.get("/", async (req, res) => {
 // POST tạo danh mục mới
 router.post("/", async (req, res) => {
   try {
-    const { TenLoai, MauSac, MoTa } = req.body;
+    const { TenLoai, MoTa } = req.body;
 
     if (!TenLoai) {
       return res.status(400).json({
@@ -60,11 +62,10 @@ router.post("/", async (req, res) => {
       .request()
       .input("UserID", sql.Int, req.userId)
       .input("TenLoai", sql.NVarChar, TenLoai)
-      .input("MauSac", sql.NVarChar, MauSac || "#3B82F6")
       .input("MoTa", sql.NVarChar, MoTa || "").query(`
-        INSERT INTO LoaiCongViec (UserID, TenLoai, MauSac, MoTa)
-        OUTPUT INSERTED.MaLoai, INSERTED.TenLoai, INSERTED.MauSac, INSERTED.MoTa
-        VALUES (@UserID, @TenLoai, @MauSac, @MoTa)
+        INSERT INTO LoaiCongViec (UserID, TenLoai, MoTa)
+        OUTPUT INSERTED.MaLoai, INSERTED.TenLoai, INSERTED.MoTa
+        VALUES (@UserID, @TenLoai, @MoTa)
       `);
 
     res.json({ success: true, data: result.recordset[0] });
@@ -77,7 +78,7 @@ router.post("/", async (req, res) => {
 // PUT cập nhật danh mục
 router.put("/:id", async (req, res) => {
   try {
-    const { TenLoai, MauSac, MoTa } = req.body;
+    const { TenLoai, MoTa } = req.body;
     const pool = await dbPoolPromise;
 
     await pool
@@ -85,10 +86,9 @@ router.put("/:id", async (req, res) => {
       .input("MaLoai", sql.Int, req.params.id)
       .input("UserID", sql.Int, req.userId)
       .input("TenLoai", sql.NVarChar, TenLoai)
-      .input("MauSac", sql.NVarChar, MauSac)
       .input("MoTa", sql.NVarChar, MoTa || "").query(`
         UPDATE LoaiCongViec
-        SET TenLoai = @TenLoai, MauSac = @MauSac, MoTa = @MoTa
+        SET TenLoai = @TenLoai, MoTa = @MoTa
         WHERE MaLoai = @MaLoai AND UserID = @UserID
       `);
 

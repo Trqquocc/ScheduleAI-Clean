@@ -1,16 +1,14 @@
+// Quản lý sự kiện
+
 const express = require("express");
 const router = express.Router();
-
-// ✅ FIX: Sử dụng dbPoolPromise thay vì poolPromise
 const { dbPoolPromise, sql } = require("../config/database");
 
-// ✅ GET /api/calendar/events - Lấy tất cả events của user - FIXED VERSION
 router.get("/events", async (req, res) => {
   try {
     const userId = req.user.UserID;
     console.log(`📅 Fetching events for user: ${userId}`);
 
-    // ✅ FIX: Sử dụng dbPoolPromise
     const pool = await dbPoolPromise;
 
     const result = await pool.request().input("userId", sql.Int, userId).query(`
@@ -27,7 +25,7 @@ router.get("/events", async (req, res) => {
           cv.TieuDe,
           cv.MoTa,
           cv.NgayTao AS CongViecNgayTao,
-          lc.MauSac AS MaMau
+          cv.MauSac AS MaMau
         FROM LichTrinh lt
         LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
         LEFT JOIN LoaiCongViec lc ON cv.MaLoai = lc.MaLoai
@@ -35,11 +33,8 @@ router.get("/events", async (req, res) => {
         ORDER BY lt.GioBatDau ASC
       `);
 
-    console.log(
-      `✅ Found ${result.recordset.length} events for user ${userId}`
-    );
+    console.log(` Found ${result.recordset.length} events for user ${userId}`);
 
-    // ✅ FIX: Xử lý dữ liệu an toàn hơn
     const events = result.recordset.map((ev) => {
       // Đảm bảo không có giá trị undefined
       const eventData = {
@@ -54,8 +49,8 @@ router.get("/events", async (req, res) => {
           : null,
         ThoiGianBatDau: ev.ThoiGianBatDau,
         ThoiGianKetThuc: ev.ThoiGianKetThuc,
-        backgroundColor: ev.MaMau || "#3788d8",
-        MaMau: ev.MaMau || "#3788d8",
+        backgroundColor: ev.MauSac || "#3788d8",
+        MaMau: ev.MauSac || "#3788d8",
         extendedProps: {
           note: ev.GhiChu || "",
           completed: ev.DaHoanThanh || false,
@@ -313,7 +308,7 @@ router.get("/range", async (req, res) => {
           cv.TieuDe,
           cv.MoTa,
           cv.NgayTao AS CongViecNgayTao,
-          lc.MauSac AS MaMau
+          cv.MauSac
         FROM LichTrinh lt
         LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
         LEFT JOIN LoaiCongViec lc ON cv.MaLoai = lc.MaLoai
@@ -338,10 +333,10 @@ router.get("/range", async (req, res) => {
   }
 });
 
-outer.get("/ai-events", async (req, res) => {
+router.get("/ai-events", async (req, res) => {
   try {
     const userId = req.user.UserID;
-    console.log(`🤖 Fetching AI events for user: ${userId}`);
+    console.log(` Fetching AI events for user: ${userId}`);
 
     const pool = await dbPoolPromise;
 
@@ -359,7 +354,7 @@ outer.get("/ai-events", async (req, res) => {
           cv.TieuDe,
           cv.MoTa,
           cv.NgayTao AS CongViecNgayTao,
-          lc.MauSac AS MaMau
+          cv.MauSac
         FROM LichTrinh lt
         LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
         LEFT JOIN LoaiCongViec lc ON cv.MaLoai = lc.MaLoai
@@ -369,7 +364,7 @@ outer.get("/ai-events", async (req, res) => {
       `);
 
     console.log(
-      `✅ Found ${result.recordset.length} AI events for user ${userId}`
+      ` Found ${result.recordset.length} AI events for user ${userId}`
     );
 
     // Xử lý dữ liệu
@@ -386,13 +381,13 @@ outer.get("/ai-events", async (req, res) => {
         DaHoanThanh: ev.DaHoanThanh,
         GhiChu: ev.GhiChu || "",
         AI_DeXuat: ev.AI_DeXuat,
-        MaMau: ev.MaMau || "#8B5CF6",
-        Color: ev.MaMau || "#8B5CF6",
-        backgroundColor: ev.MaMau || "#8B5CF6",
+        MaMau: ev.MauSac || "#8B5CF6",
+        Color: ev.MauSac || "#8B5CF6",
+        backgroundColor: ev.MauSac || "#8B5CF6",
         extendedProps: {
           note: ev.GhiChu || "",
           completed: ev.DaHoanThanh || false,
-          aiSuggested: true, // Luôn là true cho endpoint này
+          aiSuggested: true,
           taskId: ev.MaCongViec || null,
           description: ev.MoTa || "",
           created: ev.CongViecNgayTao || ev.LichTrinhNgayTao,

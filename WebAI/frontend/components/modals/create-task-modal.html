@@ -399,18 +399,18 @@
   </div>
 </div>
 
-<!-- ĐƠN GIẢN: Script inline ngắn gọn -->
 <script>
-  // Debug: Kiểm tra script có chạy không
-  console.log("🎯 [CREATE-TASK-MODAL] Script inline started");
+  // ============================================
+  // HÀM CHÍNH - HOÀN CHỈNH
+  // ============================================
 
-  // Hàm load danh mục
+  // 1. HÀM LOAD CATEGORIES (BẠN ĐANG THIẾU)
   async function loadCategoriesForModal() {
-    console.log("🔄 [CREATE-TASK-MODAL] loadCategoriesForModal called");
+    console.log("🔄 [CREATE-TASK-MODAL] Loading categories...");
 
     const container = document.getElementById("category-container");
     if (!container) {
-      console.error("❌ [CREATE-TASK-MODAL] container not found");
+      console.error("❌ [CREATE-TASK-MODAL] Category container not found");
       return;
     }
 
@@ -421,7 +421,6 @@
       const token = localStorage.getItem("auth_token");
       if (!token) throw new Error("No auth token");
 
-      console.log("📤 [CREATE-TASK-MODAL] Fetching categories...");
       const response = await fetch("/api/categories", {
         method: "GET",
         headers: {
@@ -430,14 +429,12 @@
         },
       });
 
-      console.log("📥 [CREATE-TASK-MODAL] Response status:", response.status);
-
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
       const result = await response.json();
-      console.log("📦 [CREATE-TASK-MODAL] Result:", result);
+      console.log("📦 [CREATE-TASK-MODAL] Categories result:", result);
 
       if (result.success && result.data) {
         renderCategories(result.data);
@@ -445,15 +442,18 @@
         throw new Error(result.message || "Failed to load categories");
       }
     } catch (error) {
-      console.error("❌ [CREATE-TASK-MODAL] Error:", error);
+      console.error("❌ [CREATE-TASK-MODAL] Error loading categories:", error);
       const container = document.getElementById("category-container");
       if (container) {
         container.innerHTML = `
-        <div class="text-red-500 text-center p-3">
-          <i class="fas fa-exclamation-triangle mr-2"></i>
-          Lỗi tải danh mục: ${error.message}
-        </div>
-      `;
+          <div class="text-red-500 text-center p-3">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Lỗi tải danh mục: ${error.message}
+            <button onclick="loadCategoriesForModal()" class="text-blue-500 text-sm mt-2 hover:underline">
+              Thử lại
+            </button>
+          </div>
+        `;
       }
     }
   }
@@ -464,28 +464,38 @@
 
     if (!categories || categories.length === 0) {
       container.innerHTML = `
-      <div class="text-gray-500 text-center py-4 italic">
-        Chưa có danh mục nào.
-        <br>
-        Nhấn "+ Tạo mới danh mục" để thêm.
-      </div>
-    `;
+        <div class="text-gray-500 text-center py-4 italic">
+          Chưa có danh mục nào.
+          <br>
+          Nhấn "+ Tạo mới danh mục" để thêm.
+        </div>
+      `;
       return;
     }
 
     let html = "";
-    categories.forEach((cat) => {
+    categories.forEach((cat, index) => {
       html += `
-      <div class="flex items-center justify-between border border-gray-300 rounded px-3 py-2 mb-2 hover:bg-gray-50">
-        <label class="flex items-center gap-3 cursor-pointer flex-1">
-          <input type="radio" name="taskCategory" value="${cat.MaLoai}" 
-                 class="category-radio h-4 w-4 text-blue-600 focus:ring-blue-500" />
-          <span class="text-sm font-medium text-gray-700">${cat.TenLoai}</span>
-          <div class="w-4 h-4 rounded-full border-2 border-gray-300" 
-               style="background-color: ${cat.MauSac || "#3B82F6"}"></div>
-        </label>
-      </div>
-    `;
+        <div class="flex items-center justify-between border border-gray-300 rounded px-3 py-2 mb-2 hover:bg-gray-50 transition-colors">
+          <label class="flex items-center gap-3 cursor-pointer flex-1">
+            <input 
+              type="radio" 
+              name="taskCategory" 
+              value="${cat.MaLoai}" 
+              class="category-radio h-4 w-4 text-blue-600 focus:ring-blue-500" 
+              ${index === 0 ? "checked" : ""}
+            />
+            <span class="text-sm font-medium text-gray-700">${
+              cat.TenLoai
+            }</span>
+            <div 
+              class="w-4 h-4 rounded-full border-2 border-gray-300" 
+              style="background-color: ${cat.MauSac || "#3B82F6"}"
+              title="${cat.MauSac || "#3B82F6"}"
+            ></div>
+          </label>
+        </div>
+      `;
     });
 
     container.innerHTML = html;
@@ -494,53 +504,492 @@
     );
   }
 
-  // Khởi tạo sự kiện khi modal mở
-  function initCreateTaskModal() {
-    console.log("🔧 [CREATE-TASK-MODAL] initCreateTaskModal called");
+  // 2. HÀM XỬ LÝ TAG
+  function getTagsFromInput() {
+    const tagInput = document.getElementById("taskTag");
+    if (!tagInput) return [];
 
-    // Nút tạo danh mục
-    const createBtn = document.getElementById("createNewCategoryBtn");
-    if (createBtn) {
-      console.log("✅ [CREATE-TASK-MODAL] Found createNewCategoryBtn");
-      createBtn.addEventListener("click", function (e) {
+    const tagValue = tagInput.value.trim();
+    if (!tagValue) return [];
+
+    return tagValue
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+  }
+
+  function getSelectedCategoryId() {
+    const selectedRadio = document.querySelector(
+      'input[name="taskCategory"]:checked'
+    );
+    return selectedRadio ? selectedRadio.value : null;
+  }
+
+  // 3. HÀM HIỂN THỊ THÔNG BÁO
+  function showNotification(message, type = "info") {
+    // Kiểm tra xem đã có Utils chưa
+    if (window.Utils && typeof Utils.showToast === "function") {
+      Utils.showToast(message, type);
+      return;
+    }
+
+    // Fallback: Tạo toast đơn giản
+    const toast = document.createElement("div");
+    toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-lg transition-all duration-300 transform translate-x-0 ${
+      type === "success"
+        ? "bg-green-500 text-white"
+        : type === "error"
+        ? "bg-red-500 text-white"
+        : "bg-blue-500 text-white"
+    }`;
+    toast.innerHTML = `
+      <div class="flex items-center gap-2">
+        <i class="fas ${
+          type === "success"
+            ? "fa-check-circle"
+            : type === "error"
+            ? "fa-exclamation-circle"
+            : "fa-info-circle"
+        }"></i>
+        <span>${message}</span>
+      </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.transform = "translateX(100%)";
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
+  }
+
+  // 4. HÀM XỬ LÝ FORM TẠO TASK
+  async function handleCreateTaskForm() {
+    const form = document.getElementById("createTaskForm");
+    if (!form) return;
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      console.log("📝 [CREATE-TASK-MODAL] Submitting task form...");
+
+      // Hiển thị loading
+      const submitBtn = form.querySelector("button[type='submit']");
+      const submitText = submitBtn.querySelector(".submit-text");
+      const submitLoading = submitBtn.querySelector(".submit-loading");
+
+      if (submitText && submitLoading) {
+        submitText.classList.add("hidden");
+        submitLoading.classList.remove("hidden");
+        submitBtn.disabled = true;
+      }
+
+      try {
+        // Lấy dữ liệu từ form
+        const formData = {
+          TieuDe: document.getElementById("taskTitle").value.trim(),
+          MoTa: document.getElementById("taskDescription").value.trim(),
+          ThoiGianUocTinh:
+            parseInt(document.getElementById("taskDuration").value) || 60,
+          MucDoUuTien:
+            parseInt(document.getElementById("taskPriority").value) || 2,
+          MucDoPhucTap: document.getElementById("taskComplexity").value
+            ? parseInt(document.getElementById("taskComplexity").value)
+            : null,
+          MucDoTapTrung: document.getElementById("taskFocusLevel").value
+            ? parseInt(document.getElementById("taskFocusLevel").value)
+            : null,
+          ThoiDiemThichHop: document.getElementById("taskSuitableTime").value
+            ? parseInt(document.getElementById("taskSuitableTime").value)
+            : null,
+          LuongTheoGio:
+            parseInt(document.getElementById("taskHourlyWage").value) || 0,
+          CoThoiGianCoDinh: document.getElementById("taskFixedTime").checked,
+          tags: getTagsFromInput(),
+          MaLoai: getSelectedCategoryId(),
+        };
+
+        // Validate dữ liệu
+        if (!formData.TieuDe) {
+          showNotification("Vui lòng nhập tiêu đề công việc", "error");
+          throw new Error("Title is required");
+        }
+
+        // Xử lý thời gian cố định
+        if (formData.CoThoiGianCoDinh) {
+          const startTime = document.getElementById("taskFixedStartTime").value;
+          if (!startTime) {
+            showNotification(
+              "Vui lòng chọn thời gian bắt đầu cho công việc cố định",
+              "error"
+            );
+            throw new Error("Missing start time");
+          }
+
+          formData.GioBatDauCoDinh = startTime;
+          formData.ThoiLuongCoDinh =
+            parseInt(document.getElementById("taskFixedDuration").value) || 60;
+
+          // Tính thời gian kết thúc
+          const start = new Date(startTime);
+          const end = new Date(
+            start.getTime() + formData.ThoiLuongCoDinh * 60000
+          );
+          formData.GioKetThucCoDinh = end.toISOString().slice(0, 16);
+
+          const repeatOption =
+            document.getElementById("taskRepeatOption").value;
+          if (repeatOption) {
+            formData.LapLai = repeatOption;
+          }
+        }
+
+        console.log("📤 [CREATE-TASK-MODAL] Sending task data:", formData);
+
+        // Gửi request tạo task
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+          showNotification("Vui lòng đăng nhập lại", "error");
+          throw new Error("No auth token");
+        }
+
+        const response = await fetch("/api/tasks", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        });
+
+        const result = await response.json();
+        console.log("📥 [CREATE-TASK-MODAL] Create task response:", result);
+
+        if (result.success) {
+          showNotification("Tạo công việc thành công!", "success");
+
+          // Đóng modal
+          closeMainModal();
+
+          // Reset form
+          form.reset();
+          document.getElementById("taskFixedTime").checked = false;
+          document.getElementById("fixedTimeFields").classList.add("hidden");
+
+          // Gọi hàm reload tasks nếu có
+          if (
+            typeof window.WorkManager === "object" &&
+            window.WorkManager.reload
+          ) {
+            window.WorkManager.reload();
+          } else if (typeof window.loadTasks === "function") {
+            window.loadTasks();
+          }
+
+          // Dispatch event
+          window.dispatchEvent(
+            new CustomEvent("taskCreated", {
+              detail: { task: result.data },
+            })
+          );
+        } else {
+          showNotification(result.message || "Lỗi khi tạo công việc", "error");
+        }
+      } catch (error) {
+        console.error("❌ [CREATE-TASK-MODAL] Error creating task:", error);
+        if (
+          !error.message.includes("Title is required") &&
+          !error.message.includes("Missing start time")
+        ) {
+          showNotification("Lỗi kết nối máy chủ", "error");
+        }
+      } finally {
+        // Ẩn loading
+        if (submitText && submitLoading) {
+          submitText.classList.remove("hidden");
+          submitLoading.classList.add("hidden");
+          submitBtn.disabled = false;
+        }
+      }
+    });
+  }
+
+  // 5. HÀM XỬ LÝ THỜI GIAN CỐ ĐỊNH
+  function handleFixedTimeToggle() {
+    const fixedTimeCheckbox = document.getElementById("taskFixedTime");
+    const fixedTimeFields = document.getElementById("fixedTimeFields");
+    const startTimeInput = document.getElementById("taskFixedStartTime");
+    const durationInput = document.getElementById("taskFixedDuration");
+    const endTimeInput = document.getElementById("taskFixedEndTime");
+
+    if (!fixedTimeCheckbox || !fixedTimeFields) return;
+
+    fixedTimeCheckbox.addEventListener("change", function () {
+      if (this.checked) {
+        fixedTimeFields.classList.remove("hidden");
+
+        // Set default start time (now + 1 hour)
+        const now = new Date();
+        now.setHours(now.getHours() + 1);
+        const formattedDateTime = formatDateTime(now);
+        startTimeInput.value = formattedDateTime;
+
+        // Tính toán thời gian kết thúc
+        calculateEndTime();
+      } else {
+        fixedTimeFields.classList.add("hidden");
+      }
+    });
+
+    if (startTimeInput && durationInput && endTimeInput) {
+      startTimeInput.addEventListener("change", calculateEndTime);
+      durationInput.addEventListener("input", calculateEndTime);
+    }
+  }
+
+  function formatDateTime(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  function calculateEndTime() {
+    const startTimeInput = document.getElementById("taskFixedStartTime");
+    const durationInput = document.getElementById("taskFixedDuration");
+    const endTimeInput = document.getElementById("taskFixedEndTime");
+
+    if (!startTimeInput.value || !durationInput.value) return;
+
+    const startTime = new Date(startTimeInput.value);
+    const durationMinutes = parseInt(durationInput.value) || 60;
+
+    const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
+    endTimeInput.value = formatDateTime(endTime);
+  }
+
+  // 6. HÀM XỬ LÝ MODAL CATEGORY
+  function handleCategoryModal() {
+    const createCategoryBtn = document.getElementById("createNewCategoryBtn");
+    const categoryModal = document.getElementById("createCategoryModal");
+    const closeCategoryBtn = document.getElementById("closeCategoryModalBtn");
+    const cancelCategoryBtn = document.getElementById("cancelCategoryBtn");
+    const categoryForm = document.getElementById("createCategoryForm");
+
+    if (!createCategoryBtn || !categoryModal) return;
+
+    // Mở modal tạo category
+    createCategoryBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log("➕ [CREATE-TASK-MODAL] Opening category modal");
+      categoryModal.classList.remove("hidden");
+    });
+
+    // Đóng modal category
+    const closeModal = () => {
+      categoryModal.classList.add("hidden");
+      if (categoryForm) categoryForm.reset();
+      const colorInput = document.getElementById("newCategoryColor");
+      if (colorInput) colorInput.value = "#3B82F6";
+    };
+
+    if (closeCategoryBtn)
+      closeCategoryBtn.addEventListener("click", closeModal);
+    if (cancelCategoryBtn)
+      cancelCategoryBtn.addEventListener("click", closeModal);
+
+    // Xử lý click ra ngoài
+    categoryModal.addEventListener("click", function (e) {
+      if (e.target === this) closeModal();
+    });
+
+    // Xử lý form category
+    if (categoryForm) {
+      categoryForm.addEventListener("submit", async function (e) {
         e.preventDefault();
-        e.stopPropagation(); // QUAN TRỌNG: Ngăn sự kiện lan ra
-        e.stopImmediatePropagation(); // Ngăn tất cả handlers khác
+        e.stopPropagation();
 
-        console.log("➕ [CREATE-TASK-MODAL] Create category button clicked");
+        const nameInput = document.getElementById("newCategoryName");
+        const colorInput = document.getElementById("newCategoryColor");
+        const descInput = document.getElementById("newCategoryDesc");
 
-        const categoryModal = document.getElementById("createCategoryModal");
-        if (!categoryModal) {
-          console.error("❌ Category modal not found!");
+        if (!nameInput || !nameInput.value.trim()) {
+          showNotification("Vui lòng nhập tên danh mục", "error");
           return;
         }
 
-        // FORCE HIỂN THỊ
-        categoryModal.classList.remove("hidden");
-        categoryModal.style.display = "flex";
-        categoryModal.style.position = "fixed";
-        categoryModal.style.zIndex = "10000"; // CAO HƠN modal chính
-        categoryModal.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-        categoryModal.style.opacity = "1";
-        categoryModal.style.visibility = "visible";
+        const categoryData = {
+          TenLoai: nameInput.value.trim(),
+          MauSac: colorInput ? colorInput.value : "#3B82F6",
+          MoTa: descInput ? descInput.value.trim() : "",
+        };
 
-        // Focus vào input
-        setTimeout(() => {
-          const nameInput = document.getElementById("newCategoryName");
-          if (nameInput) nameInput.focus();
-        }, 50);
+        try {
+          const token = localStorage.getItem("auth_token");
+          const response = await fetch("/api/categories", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(categoryData),
+          });
 
-        console.log("✅ Category modal shown with z-index: 10000");
+          const result = await response.json();
+
+          if (result.success) {
+            showNotification("Tạo danh mục thành công!", "success");
+            closeModal();
+            loadCategoriesForModal();
+          } else {
+            showNotification(result.message || "Lỗi khi tạo danh mục", "error");
+          }
+        } catch (error) {
+          console.error("❌ Error creating category:", error);
+          showNotification("Lỗi kết nối máy chủ", "error");
+        }
       });
     }
+  }
+
+  // 7. HÀM ĐÓNG MODAL CHÍNH
+  function closeMainModal() {
+    const modalOverlay = document.querySelector(".modal-overlay");
+    const modalContent = document.getElementById("createTaskModalContent");
+
+    if (modalOverlay) modalOverlay.style.display = "none";
+    if (modalContent) modalContent.style.display = "none";
+
+    // Reset form
+    const form = document.getElementById("createTaskForm");
+    if (form) {
+      form.reset();
+      document.getElementById("taskPriority").value = "2";
+      document.getElementById("taskFixedTime").checked = false;
+      document.getElementById("fixedTimeFields").classList.add("hidden");
+    }
+  }
+
+  // 8. HÀM KHỞI TẠO MODAL CHÍNH
+  function initCreateTaskModal() {
+    console.log("🔧 [CREATE-TASK-MODAL] Initializing modal...");
 
     // Load danh mục
     loadCategoriesForModal();
+
+    // Xử lý form tạo task
+    handleCreateTaskForm();
+
+    // Xử lý toggle thời gian cố định
+    handleFixedTimeToggle();
+
+    // Xử lý modal category
+    handleCategoryModal();
+
+    // Xử lý nút đóng/hủy
+    const closeBtn = document.getElementById("closeCreateTaskBtn");
+    const cancelBtn = document.getElementById("cancelCreateTaskBtn");
+    const modalOverlay = document.querySelector(
+      ".modal-overlay[data-modal-close]"
+    );
+
+    if (closeBtn) closeBtn.addEventListener("click", closeMainModal);
+    if (cancelBtn) cancelBtn.addEventListener("click", closeMainModal);
+    if (modalOverlay) modalOverlay.addEventListener("click", closeMainModal);
+
+    // Set default datetime cho thời gian cố định
+    const startTimeInput = document.getElementById("taskFixedStartTime");
+    if (startTimeInput) {
+      const now = new Date();
+      now.setHours(now.getHours() + 1);
+      startTimeInput.value = formatDateTime(now);
+      calculateEndTime();
+    }
+
+    console.log("✅ [CREATE-TASK-MODAL] Modal fully initialized");
   }
 
-  // Xuất hàm để gọi từ bên ngoài
+  // ============================================
+  // XUẤT HÀM RA GLOBAL
+  // ============================================
+
   window.initCreateTaskModal = initCreateTaskModal;
   window.loadCategoriesForModal = loadCategoriesForModal;
+  window.showNotification = showNotification;
 
-  console.log("✅ [CREATE-TASK-MODAL] Script inline loaded");
+  console.log("✅ [CREATE-TASK-MODAL] Script loaded successfully");
+
+  // Tự động khởi tạo nếu modal đã hiển thị
+  document.addEventListener("DOMContentLoaded", function () {
+    const modalContent = document.getElementById("createTaskModalContent");
+    if (modalContent && modalContent.style.display !== "none") {
+      setTimeout(initCreateTaskModal, 100);
+    }
+  });
+
+  // Lắng nghe sự kiện modal được mở
+  document.addEventListener("modalOpened", function (e) {
+    if (e.detail && e.detail.modalId === "createTaskModal") {
+      setTimeout(initCreateTaskModal, 50);
+    }
+  });
 </script>
+
+<!-- THÊM CSS NẾU CẦN -->
+<style>
+  /* CSS cho tag input (nếu cần) */
+  #taskTag:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  /* Animation cho modal */
+  .modal-content {
+    animation: modalSlideIn 0.3s ease-out;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Hiệu ứng hover cho category items */
+  .category-item:hover {
+    background-color: #f9fafb;
+    transform: translateX(2px);
+    transition: all 0.2s ease;
+  }
+
+  /* Custom scrollbar cho category container */
+  #category-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  #category-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+
+  #category-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+  }
+
+  #category-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+</style>

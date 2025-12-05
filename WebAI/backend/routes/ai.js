@@ -4,9 +4,7 @@ const { authenticateToken } = require("../middleware/auth");
 const { dbPoolPromise, sql } = require("../config/database");
 require("dotenv").config();
 
-// ============================================
-// GEMINI AI INITIALIZATION - WORKING VERSION
-// ============================================
+// GEMINI AI INITIALIZATION
 let geminiModel = null;
 let geminiAvailable = false;
 
@@ -14,13 +12,12 @@ try {
   const { GoogleGenerativeAI } = require("@google/generative-ai");
 
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== "") {
-    console.log("ðŸ”§ Initializing Gemini AI...");
+    console.log("Initializing Gemini AI...");
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // âœ… Sá»¬ Dá»¤NG MODEL ÄÃšNG: gemini-2.5-flash (theo káº¿t quáº£ test)
     geminiModel = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash", // Model má»›i nháº¥t, Ä‘Ã£ test thÃ nh cÃ´ng
+      model: "gemini-2.5-flash",
       generationConfig: {
         temperature: 0.7,
         topP: 0.8,
@@ -31,24 +28,19 @@ try {
 
     geminiAvailable = true;
     console.log(
-      "âœ… Gemini AI initialized successfully with model: gemini-2.5-flash"
+      "Gemini AI initialized successfully with model: gemini-2.5-flash"
     );
   } else {
-    console.warn("âš ï¸ GEMINI_API_KEY is missing or empty in .env file");
-    console.log("ðŸ”¶ AI will run in simulation mode");
+    console.warn("GEMINI_API_KEY is missing or empty in .env file");
+    console.log("AI will run in simulation mode");
   }
 } catch (error) {
-  console.error("âŒ Error initializing Gemini AI:", error.message);
-  console.log("ðŸ”¶ AI will run in simulation mode");
+  console.error("Error initializing Gemini AI:", error.message);
+  console.log("AI will run in simulation mode");
 }
 
-// ============================================
 // HELPER FUNCTIONS
-// ============================================
 
-/**
- * Láº¥y thÃ´ng tin chi tiáº¿t cá»§a tasks tá»« database
- */
 async function getTaskDetailsFromDatabase(taskIds, userId) {
   try {
     if (!taskIds || taskIds.length === 0) {
@@ -101,17 +93,14 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
       };
     });
 
-    console.log(`ðŸ“Š Loaded ${taskDetails.length} task details from database`);
+    console.log(`Loaded ${taskDetails.length} task details from database`);
     return taskDetails;
   } catch (error) {
-    console.error("âŒ Error fetching task details:", error);
+    console.error("Error fetching task details:", error);
     return [];
   }
 }
 
-/**
- * Láº¥y lá»‹ch hiá»‡n cÃ³ tá»« database
- */
 async function getExistingEvents(userId, startDate, endDate) {
   try {
     const pool = await dbPoolPromise;
@@ -136,21 +125,18 @@ async function getExistingEvents(userId, startDate, endDate) {
       .input("endDate", sql.DateTime, new Date(endDate))
       .query(query);
 
-    console.log(`ðŸ“… Found ${result.recordset.length} existing events`);
+    console.log(`Found ${result.recordset.length} existing events`);
     return result.recordset.map((event) => ({
       ...event,
       start: event.start_time,
       end: event.end_time,
     }));
   } catch (error) {
-    console.error("âŒ Error fetching existing events:", error.message);
+    console.error("Error fetching existing events:", error.message);
     return [];
   }
 }
 
-/**
- * XÃ¢y dá»±ng prompt cho Gemini AI
- */
 function buildGeminiPrompt(
   taskDetails,
   startDate,
@@ -161,11 +147,11 @@ function buildGeminiPrompt(
   const taskList = taskDetails
     .map(
       (task) => `
-    - CÃ´ng viá»‡c "${task.title}" (ID: ${task.id}):
-      + Thá»i lÆ°á»£ng: ${task.estimatedMinutes} phÃºt
-      + Æ¯u tiÃªn: ${task.priority}/4
-      + Thá»i Ä‘iá»ƒm thÃ­ch há»£p: ${task.suitableTime}
-      + Äá»™ phá»©c táº¡p: ${task.complexity}/5
+    - Công việc "${task.title}" (ID: ${task.id}):
+      + Thời lượng: ${task.estimatedMinutes} phút
+      + Ưu tiên: ${task.priority}/4
+      + Thời điểm thích hợp: ${task.suitableTime}
+      + Độ phức tạp: ${task.complexity}/5
   `
     )
     .join("\n");
@@ -178,65 +164,54 @@ function buildGeminiPrompt(
     )
     .join("\n");
 
-  return `Báº¡n lÃ  trá»£ lÃ½ láº­p lá»‹ch thÃ´ng minh. HÃ£y sáº¯p xáº¿p cÃ¡c cÃ´ng viá»‡c sau vÃ o lá»‹ch:
+  return `Bạn là trợ lý lập lịch thông minh. Hãy sắp xếp các công việc sau vào lịch:
 
-CÃC CÃ”NG VIá»†C Cáº¦N Sáº®P Xáº¾P:
+CÁC CÔNG VIỆC CẦN SẮP XẾP:
 ${taskList}
 
-KHOáº¢NG THá»œI GIAN: Tá»« ${startDate} Ä‘áº¿n ${endDate}
+KHOẢNG THỜI GIAN: Từ ${startDate} đến ${endDate}
 
-Lá»ŠCH HIá»†N CÃ“ (trÃ¡nh trÃ¹ng):
-${existingEvents.length > 0 ? existingSchedule : "KhÃ´ng cÃ³ lá»‹ch"}
+LỊCH HIỆN CÓ (tránh trùng):
+${existingEvents.length > 0 ? existingSchedule : "Không có lịch"}
 
-YÃŠU Cáº¦U:
-1. ${
-    options.considerPriority
-      ? "Æ¯u tiÃªn viá»‡c quan trá»ng trÆ°á»›c"
-      : "BÃ¬nh thÆ°á»ng"
-  }
-2. ${
-    options.avoidConflict
-      ? "TrÃ¡nh trÃ¹ng lá»‹ch cÃ³ sáºµn"
-      : "KhÃ´ng cáº§n trÃ¡nh"
-  }
+YÊU CẦU:
+1. ${options.considerPriority ? "Ưu tiên việc quan trọng trước" : "Bình thường"}
+2. ${options.avoidConflict ? "Tránh trùng lịch có sẵn" : "Không cần tránh"}
 3. ${
     options.balanceWorkload
-      ? "CÃ¢n báº±ng cÃ´ng viá»‡c cÃ¡c ngÃ y"
-      : "KhÃ´ng cáº§n cÃ¢n báº±ng"
+      ? "Cân bằng công việc các ngày"
+      : "Không cần cân bằng"
   }
-4. Xáº¿p viá»‡c vÃ o thá»i Ä‘iá»ƒm thÃ­ch há»£p cá»§a nÃ³ (morning/noon/afternoon/evening)
-5. Má»—i ngÃ y khÃ´ng quÃ¡ 8 tiáº¿ng lÃ m viá»‡c
-6. LÃ m viá»‡c tá»« 8:00 Ä‘áº¿n 22:00
+4. Xếp việc vào thời điểm thích hợp của nó (morning/noon/afternoon/evening)
+5. Mỗi ngày không quá 8 tiếng làm việc
+6. Làm việc từ 8:00 đến 22:00
 
-HÃ£y tráº£ vá» Káº¾T QUáº¢ dÆ°á»›i dáº¡ng JSON (CHá»ˆ TRáº¢ Vá»€ JSON, KHÃ”NG GIáº¢I THÃCH):
+Hãy trả về KẾT QUẢ dưới dạng JSON (CHỈ TRẢ VỀ JSON, KHÔNG GIẢI THÍCH):
 
 {
   "suggestions": [
     {
-      "taskId": [sá»‘],
+      "taskId": [số],
       "scheduledTime": "YYYY-MM-DDTHH:mm:ss",
-      "durationMinutes": [sá»‘],
-      "reason": "lÃ½ do báº±ng tiáº¿ng Viá»‡t"
+      "durationMinutes": [số],
+      "reason": "lý do bằng tiếng Việt"
     }
   ],
-  "summary": "tÃ³m táº¯t báº±ng tiáº¿ng Viá»‡t",
+  "summary": "tóm tắt bằng tiếng Việt",
   "statistics": {
-    "totalTasks": [sá»‘],
-    "totalHours": [sá»‘],
-    "daysUsed": [sá»‘]
+    "totalTasks": [số],
+    "totalHours": [số],
+    "daysUsed": [số]
   }
 }
 
-VÃ­ dá»¥ scheduledTime: "2025-12-04T09:00:00"
-Thá»i gian pháº£i náº±m trong khoáº£ng tá»« ${startDate} Ä‘áº¿n ${endDate}.`;
+Ví dụ scheduledTime: "2025-12-04T09:00:00"
+Thời gian phải nằm trong khoảng từ ${startDate} đến ${endDate}.`;
 }
 
-/**
- * Gá»i Gemini AI API vá»›i error handling
- */
 async function callGeminiAI(prompt) {
   try {
-    console.log("ðŸ¤– Calling Gemini AI API...");
+    console.log("Calling Gemini AI API...");
 
     if (!geminiAvailable || !geminiModel) {
       throw new Error("Gemini AI is not available");
@@ -247,15 +222,14 @@ async function callGeminiAI(prompt) {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`ðŸ”„ Attempt ${attempt}/${maxRetries}`);
+        console.log(`Attempt ${attempt}/${maxRetries}`);
 
         const result = await geminiModel.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
 
-        console.log("âœ… Gemini AI response received");
+        console.log("Gemini AI response received");
 
-        // TÃ¬m vÃ  parse JSON
         const jsonMatch = text.match(/{[\s\S]*}/);
         if (!jsonMatch) {
           throw new Error("No JSON found in response");
@@ -264,16 +238,15 @@ async function callGeminiAI(prompt) {
         const jsonStr = jsonMatch[0];
         const parsed = JSON.parse(jsonStr);
 
-        // Validate response
         if (!parsed.suggestions || !Array.isArray(parsed.suggestions)) {
           throw new Error("Invalid response format: missing suggestions array");
         }
 
-        console.log(`ðŸ“¦ Parsed ${parsed.suggestions.length} suggestions`);
+        console.log(`Parsed ${parsed.suggestions.length} suggestions`);
         return parsed;
       } catch (attemptError) {
         lastError = attemptError;
-        console.log(`âš ï¸ Attempt ${attempt} failed:`, attemptError.message);
+        console.log(`Attempt ${attempt} failed:`, attemptError.message);
 
         if (attempt < maxRetries) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -283,14 +256,11 @@ async function callGeminiAI(prompt) {
 
     throw lastError;
   } catch (error) {
-    console.error("âŒ Gemini AI API error:", error.message);
+    console.error("Gemini AI API error:", error.message);
     throw error;
   }
 }
 
-/**
- * Táº¡o lá»‹ch trÃ¬nh simulation
- */
 async function generateSimulatedSchedule(
   taskDetails,
   startDate,
@@ -298,7 +268,7 @@ async function generateSimulatedSchedule(
   options,
   existingEvents
 ) {
-  console.log("ðŸ”¶ Generating simulated schedule...");
+  console.log("Generating simulated schedule...");
 
   const suggestions = [];
   const start = new Date(startDate);
@@ -310,10 +280,10 @@ async function generateSimulatedSchedule(
   const sortedTasks = [...taskDetails].sort((a, b) => b.priority - a.priority);
 
   const dailySlots = [
-    { hour: 9, label: "sÃ¡ng" },
-    { hour: 13, label: "chiá»u" },
-    { hour: 16, label: "chiá»u muá»™n" },
-    { hour: 19, label: "tá»‘i" },
+    { hour: 9, label: "sáng" },
+    { hour: 13, label: "chiều" },
+    { hour: 16, label: "chiều muộn" },
+    { hour: 19, label: "tối" },
   ];
 
   for (let i = 0; i < sortedTasks.length; i++) {
@@ -362,10 +332,10 @@ async function generateSimulatedSchedule(
     }
 
     const reasons = [
-      `Æ¯u tiÃªn ${task.priority}, xáº¿p vÃ o buá»•i ${slot.label}`,
-      `PhÃ¹ há»£p vá»›i thá»i Ä‘iá»ƒm ${task.suitableTime}`,
-      `CÃ´ng viá»‡c quan trá»ng, cáº§n hoÃ n thÃ nh sá»›m`,
-      `PhÃ¢n bá»• há»£p lÃ½ trong káº¿ hoáº¡ch tuáº§n`,
+      `Ưu tiên ${task.priority}, xếp vào buổi ${slot.label}`,
+      `Phù hợp với thời điểm ${task.suitableTime}`,
+      `Công việc quan trọng, cần hoàn thành sớm`,
+      `Phân bố hợp lý trong kế hoạch tuần`,
     ];
 
     const reason = reasons[Math.floor(Math.random() * reasons.length)];
@@ -390,11 +360,11 @@ async function generateSimulatedSchedule(
 
   return {
     suggestions,
-    summary: `ÄÃ£ táº¡o ${
+    summary: `Đã tạo ${
       suggestions.length
-    } khung giá» trong ${uniqueDays} ngÃ y. Tá»•ng thá»i lÆ°á»£ng: ${Math.round(
+    } khung giờ trong ${uniqueDays} ngày. Tổng thời lượng: ${Math.round(
       totalMinutes / 60
-    )} giá».`,
+    )} giờ.`,
     statistics: {
       totalTasks: suggestions.length,
       totalHours: Math.round(totalMinutes / 60),
@@ -403,16 +373,11 @@ async function generateSimulatedSchedule(
   };
 }
 
-// ============================================
 // API ENDPOINTS
-// ============================================
 
-/**
- * POST /api/ai/suggest-schedule
- */
 router.post("/suggest-schedule", authenticateToken, async (req, res) => {
   console.log("\n" + "=".repeat(50));
-  console.log("ðŸ¤– AI SCHEDULE REQUEST RECEIVED");
+  console.log("AI SCHEDULE REQUEST RECEIVED");
   console.log("=".repeat(50));
 
   try {
@@ -422,40 +387,38 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
     if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Vui lÃ²ng chá»n Ã­t nháº¥t má»™t cÃ´ng viá»‡c",
+        message: "Vui lòng chọn ít nhất một công việc",
       });
     }
 
     if (!startDate || !endDate) {
       return res.status(400).json({
         success: false,
-        message: "Vui lÃ²ng chá»n khoáº£ng thá»i gian",
+        message: "Vui lòng chọn khoảng thời gian",
       });
     }
 
-    console.log(`ðŸ‘¤ User ID: ${userId}`);
-    console.log(`ðŸ“‹ Tasks: ${taskIds.length} tasks`);
-    console.log(`ðŸ“… Date range: ${startDate} to ${endDate}`);
+    console.log(`User ID: ${userId}`);
+    console.log(`Tasks: ${taskIds.length} tasks`);
+    console.log(`Date range: ${startDate} to ${endDate}`);
 
     const taskDetails = await getTaskDetailsFromDatabase(taskIds, userId);
     if (taskDetails.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "KhÃ´ng tÃ¬m tháº¥y cÃ´ng viá»‡c Ä‘Æ°á»£c chá»n",
+        message: "Không tìm thấy công việc được chọn",
       });
     }
 
-    console.log(`ðŸ“Š Task details loaded: ${taskDetails.length} tasks`);
+    console.log(`Task details loaded: ${taskDetails.length} tasks`);
 
     let existingEvents = [];
     if (options.avoidConflict) {
       try {
         existingEvents = await getExistingEvents(userId, startDate, endDate);
-        console.log(`ðŸ“… Existing events: ${existingEvents.length}`);
+        console.log(`Existing events: ${existingEvents.length}`);
       } catch (eventError) {
-        console.log(
-          `âš ï¸ Could not load existing events: ${eventError.message}`
-        );
+        console.log(`Could not load existing events: ${eventError.message}`);
         existingEvents = [];
       }
     }
@@ -465,7 +428,7 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
 
     if (geminiAvailable) {
       try {
-        console.log("ðŸš€ Attempting to use Gemini AI...");
+        console.log("Attempting to use Gemini AI...");
         const prompt = buildGeminiPrompt(
           taskDetails,
           startDate,
@@ -476,9 +439,9 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
 
         aiResult = await callGeminiAI(prompt);
         mode = "gemini";
-        console.log("âœ… Gemini AI processed successfully");
+        console.log("Gemini AI processed successfully");
       } catch (aiError) {
-        console.error("âŒ Gemini AI failed:", aiError.message);
+        console.error("Gemini AI failed:", aiError.message);
         aiResult = await generateSimulatedSchedule(
           taskDetails,
           startDate,
@@ -510,12 +473,11 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
           taskId: suggestion.taskId,
           scheduledTime: suggestion.scheduledTime,
           durationMinutes: suggestion.durationMinutes,
-          reason: suggestion.reason || "ÄÆ°á»£c xáº¿p tá»± Ä‘á»™ng",
+          reason: suggestion.reason || "Được xếp tự động",
           color: suggestion.color || "#8B5CF6",
         })),
         summary:
-          aiResult.summary ||
-          `ÄÃ£ táº¡o ${aiResult.suggestions.length} khung giá»`,
+          aiResult.summary || `Đã tạo ${aiResult.suggestions.length} khung giờ`,
         statistics: aiResult.statistics || {
           totalTasks: aiResult.suggestions.length,
           totalHours: Math.round(
@@ -537,33 +499,28 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
       },
       message:
         mode === "gemini"
-          ? "AI Ä‘Ã£ táº¡o lá»‹ch trÃ¬nh thÃ nh cÃ´ng"
-          : "ÄÃ£ táº¡o lá»‹ch trÃ¬nh (cháº¿ Ä‘á»™ mÃ´ phá»ng)",
+          ? "AI đã tạo lịch trình thành công"
+          : "Đã tạo lịch trình (chế độ mô phỏng)",
     };
 
-    console.log(
-      `ðŸ“ˆ Generated ${response.data.suggestions.length} suggestions`
-    );
-    console.log(`ðŸ·ï¸ Mode: ${mode}`);
-    console.log("âœ… AI request completed successfully");
+    console.log(`Generated ${response.data.suggestions.length} suggestions`);
+    console.log(`Mode: ${mode}`);
+    console.log("AI request completed successfully");
     console.log("=".repeat(50) + "\n");
 
     res.json(response);
   } catch (error) {
-    console.error("âŒ AI processing failed:", error);
+    console.error("AI processing failed:", error);
 
     res.status(500).json({
       success: false,
-      message: "Lá»—i xá»­ lÃ½ AI",
+      message: "Lỗi xử lý AI",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
       mode: "error",
     });
   }
 });
 
-/**
- * GET /api/ai/test
- */
 router.get("/test", authenticateToken, (req, res) => {
   res.json({
     success: true,
