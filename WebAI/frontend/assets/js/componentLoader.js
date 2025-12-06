@@ -307,12 +307,16 @@
           id: "aiSuggestionModal",
           path: "components/modals/ai-suggestion-modal.html",
         },
+        {
+          id: "createCategoryModal",
+          path: "components/modals/create-category-modal.html",
+        },
       ];
 
       for (const modal of modals) {
         try {
           await this.loadComponent(modal.id, modal.path, {
-            executeScripts: false, // Modal thường không cần execute scripts ngay
+            executeScripts: true,
           });
         } catch (err) {
           console.warn(`⚠️ Failed to load modal: ${modal.id}`, err);
