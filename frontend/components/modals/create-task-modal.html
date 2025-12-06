@@ -341,8 +341,11 @@
 <div
   id="createCategoryModal"
   class="fixed inset-0 flex items-center justify-center hidden"
-  style="z-index: 10000 !important; background-color: rgba(0, 0, 0, 0.5)"
 >
+  <div
+    class="absolute inset-0 bg-black opacity-50"
+    id="categoryModalOverlay"
+  ></div>
   <div class="bg-white p-6 rounded-lg w-96">
     <button
       id="closeCategoryModalBtn"
@@ -604,9 +607,10 @@
           MucDoTapTrung: document.getElementById("taskFocusLevel").value
             ? parseInt(document.getElementById("taskFocusLevel").value)
             : null,
-          ThoiDiemThichHop: document.getElementById("taskSuitableTime").value
-            ? parseInt(document.getElementById("taskSuitableTime").value)
-            : null,
+          ThoiDiemThichHop: (() => {
+            const value = document.getElementById("taskSuitableTime").value;
+            return value && value.trim() !== "" ? value : null;
+          })(),
           LuongTheoGio:
             parseInt(document.getElementById("taskHourlyWage").value) || 0,
           CoThoiGianCoDinh: document.getElementById("taskFixedTime").checked,
@@ -721,67 +725,9 @@
 
   // 5. HÀM XỬ LÝ THỜI GIAN CỐ ĐỊNH
   function handleFixedTimeToggle() {
-    const fixedTimeCheckbox = document.getElementById("taskFixedTime");
-    const fixedTimeFields = document.getElementById("fixedTimeFields");
-    const startTimeInput = document.getElementById("taskFixedStartTime");
-    const durationInput = document.getElementById("taskFixedDuration");
-    const endTimeInput = document.getElementById("taskFixedEndTime");
-
-    if (!fixedTimeCheckbox || !fixedTimeFields) return;
-
-    fixedTimeCheckbox.addEventListener("change", function () {
-      if (this.checked) {
-        fixedTimeFields.classList.remove("hidden");
-
-        // Set default start time (now + 1 hour)
-        const now = new Date();
-        now.setHours(now.getHours() + 1);
-        const formattedDateTime = formatDateTime(now);
-        startTimeInput.value = formattedDateTime;
-
-        // Tính toán thời gian kết thúc
-        calculateEndTime();
-      } else {
-        fixedTimeFields.classList.add("hidden");
-      }
-    });
-
-    if (startTimeInput && durationInput && endTimeInput) {
-      startTimeInput.addEventListener("change", calculateEndTime);
-      durationInput.addEventListener("input", calculateEndTime);
-    }
-  }
-
-  function formatDateTime(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
-
-  function calculateEndTime() {
-    const startTimeInput = document.getElementById("taskFixedStartTime");
-    const durationInput = document.getElementById("taskFixedDuration");
-    const endTimeInput = document.getElementById("taskFixedEndTime");
-
-    if (!startTimeInput.value || !durationInput.value) return;
-
-    const startTime = new Date(startTimeInput.value);
-    const durationMinutes = parseInt(durationInput.value) || 60;
-
-    const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
-    endTimeInput.value = formatDateTime(endTime);
-  }
-
-  // 6. HÀM XỬ LÝ MODAL CATEGORY
-  function handleCategoryModal() {
     const createCategoryBtn = document.getElementById("createNewCategoryBtn");
     const categoryModal = document.getElementById("createCategoryModal");
-    const closeCategoryBtn = document.getElementById("closeCategoryModalBtn");
-    const cancelCategoryBtn = document.getElementById("cancelCategoryBtn");
-    const categoryForm = document.getElementById("createCategoryForm");
+    const categoryOverlay = document.getElementById("categoryModalOverlay");
 
     if (!createCategoryBtn || !categoryModal) return;
 
@@ -790,22 +736,54 @@
       e.preventDefault();
       e.stopPropagation();
       console.log("➕ [CREATE-TASK-MODAL] Opening category modal");
+
+      // HIỂN THỊ MODAL DANH MỤC VÀ OVERLAY
       categoryModal.classList.remove("hidden");
+
+      // Đóng modal tạo công việc TẠM THỜI
+      const mainModal = document.getElementById("createTaskModalContent");
+      const mainOverlay = document.querySelector(
+        ".modal-overlay[data-modal-close]"
+      );
+
+      if (mainModal) mainModal.style.opacity = "0.3";
+      if (mainOverlay) mainOverlay.style.backgroundColor = "rgba(0,0,0,0.7)";
     });
 
     // Đóng modal category
     const closeModal = () => {
       categoryModal.classList.add("hidden");
+
+      // Khôi phục modal tạo công việc
+      const mainModal = document.getElementById("createTaskModalContent");
+      const mainOverlay = document.querySelector(
+        ".modal-overlay[data-modal-close]"
+      );
+
+      if (mainModal) mainModal.style.opacity = "1";
+      if (mainOverlay) mainOverlay.style.backgroundColor = "rgba(0,0,0,0.5)";
+
+      // Reset form
+      const categoryForm = document.getElementById("createCategoryForm");
       if (categoryForm) categoryForm.reset();
+
       const colorInput = document.getElementById("newCategoryColor");
       if (colorInput) colorInput.value = "#3B82F6";
     };
+
+    // Xử lý đóng bằng nút X
+    const closeCategoryBtn = document.getElementById("closeCategoryModalBtn");
+    const cancelCategoryBtn = document.getElementById("cancelCategoryBtn");
 
     if (closeCategoryBtn)
       closeCategoryBtn.addEventListener("click", closeModal);
     if (cancelCategoryBtn)
       cancelCategoryBtn.addEventListener("click", closeModal);
 
+    // Xử lý đóng bằng click overlay
+    if (categoryOverlay) {
+      categoryOverlay.addEventListener("click", closeModal);
+    }
     // Xử lý click ra ngoài
     categoryModal.addEventListener("click", function (e) {
       if (e.target === this) closeModal();
@@ -991,5 +969,42 @@
 
   #category-container::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
+  }
+  #createCategoryModal {
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 10050 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  #createCategoryModal:not(.hidden) {
+    display: flex !important;
+  }
+
+  #createCategoryModal .bg-white {
+    z-index: 2 !important;
+    position: relative !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    margin-top: auto !important;
+    margin-bottom: auto !important;
+  }
+
+  #categoryModalOverlay {
+    z-index: 1 !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .modal-overlay[data-modal-close] {
+    z-index: 9999 !important;
   }
 </style>
