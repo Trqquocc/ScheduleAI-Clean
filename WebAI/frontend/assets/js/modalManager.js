@@ -242,7 +242,39 @@
       return this.showModalById("createTaskModal");
     },
 
+    showCreateTaskModal(taskData = null) {
+      const modal = document.getElementById("createTaskModal");
+      if (!modal) {
+        console.error("❌ Create task modal not found");
+        return;
+      }
+
+      // Hiển thị modal
+      modal.classList.add("active", "show");
+      modal.classList.remove("hidden");
+
+      // Trigger event
+      document.dispatchEvent(
+        new CustomEvent("modalShown", {
+          detail: { modalId: "createTaskModal" },
+        })
+      );
+
+      // Load categories
+      if (window.loadCategoriesForModal) {
+        setTimeout(() => {
+          window.loadCategoriesForModal();
+        }, 100);
+      }
+
+      // Nếu có taskData, fill vào form
+      if (taskData && window.fillTaskForm) {
+        window.fillTaskForm(taskData);
+      }
+    },
+
     /**
+     *
      * ✅ DEBUG HELPER
      */
     debug() {
