@@ -270,22 +270,38 @@
         setTimeout(() => window.App.updateUserInfo(), 100);
       }
 
-      // Section-specific refresh logic
+      // Section-specific refresh logic - ĐẢM BẢO WORK LUÔN RELOAD
       setTimeout(() => {
         if (sectionName === "schedule" && window.CalendarModule) {
           console.log("🔄 Refreshing calendar...");
           CalendarModule.refreshEvents && CalendarModule.refreshEvents();
           CalendarModule.refreshDragDrop && CalendarModule.refreshDragDrop();
-        } else if (sectionName === "work" && window.WorkManager) {
-          console.log("🔄 Refreshing work tasks...");
-          WorkManager.loadTasks && WorkManager.loadTasks();
+        } else if (sectionName === "work") {
+          console.log("🔄 WORK SECTION - Ensuring tasks are loaded...");
+
+          // Dispatch event để sidebar và các module khác biết
+          const workEvent = new CustomEvent("work-tab-activated");
+          document.dispatchEvent(workEvent);
+
+          // Đảm bảo WorkManager được init và load tasks
+          if (window.WorkManager) {
+            if (!WorkManager.initialized && WorkManager.init) {
+              console.log("🔧 WorkManager not initialized, calling init()");
+              WorkManager.init();
+            } else if (WorkManager.loadTasks) {
+              console.log(
+                "📥 WorkManager already initialized, calling loadTasks()"
+              );
+              WorkManager.loadTasks();
+            }
+          }
 
           // Setup drag & drop cho tasks mới
           if (CalendarModule && CalendarModule.setupNativeDragDrop) {
             setTimeout(() => {
               CalendarModule.setupNativeDragDrop();
               CalendarModule.setupExternalDraggable();
-            }, 500);
+            }, 800);
           }
         } else if (sectionName === "ai" && window.AIModule) {
           console.log("🔄 Refreshing AI suggestions...");

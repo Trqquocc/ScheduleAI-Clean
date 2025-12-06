@@ -380,6 +380,59 @@
       `Công việc: ${item.dataset.taskTitle}. Kéo thả vào lịch để lên kế hoạch.`
     );
   });
+
+  const initNav = setInterval(() => {
+    if (window.AppNavigation?.navigateToSection) {
+      clearInterval(initNav);
+      document.querySelectorAll("[data-section]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          const section = btn.dataset.section;
+
+          // Gọi navigation
+          AppNavigation.navigateToSection(section);
+
+          // Nếu là tab công việc, trigger reload
+          if (section === "work") {
+            setTimeout(() => {
+              // Dispatch event để các module khác biết
+              const event = new CustomEvent("work-tab-activated");
+              document.dispatchEvent(event);
+
+              // Gọi trực tiếp WorkManager nếu có
+              if (
+                window.WorkManager &&
+                typeof WorkManager.loadTasks === "function"
+              ) {
+                console.log("🔄 Sidebar: Triggering WorkManager.loadTasks()");
+                WorkManager.loadTasks();
+              }
+            }, 100);
+          }
+        });
+      });
+    }
+  }, 100);
+  setTimeout(() => clearInterval(initNav), 5000);
+
+  // Export để dùng ở nơi khác
+  window.updateSidebarUser = updateUserInfo;
+
+  // Hàm helper để reload work data
+  window.reloadWorkData = function () {
+    console.log("🔄 reloadWorkData called from sidebar");
+    if (window.WorkManager && typeof WorkManager.loadTasks === "function") {
+      WorkManager.loadTasks();
+    }
+    if (window.loadUserTasks) {
+      window.loadUserTasks();
+    }
+  };
+
+  // Lắng nghe sự kiện từ nơi khác để reload
+  document.addEventListener("refresh-work-data", () => {
+    window.reloadWorkData();
+  });
 </script>
 
 <style>
