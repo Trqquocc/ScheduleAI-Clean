@@ -95,25 +95,6 @@
       this.loadTasks();
     },
 
-    updateStats(tasks) {
-      const total = tasks.length;
-      const pending = tasks.filter((t) => t.TrangThaiThucHien !== 2).length;
-      const completed = tasks.filter((t) => t.TrangThaiThucHien === 2).length;
-      const totalTime = tasks.reduce(
-        (sum, t) => sum + (t.ThoiGianUocTinh || 0),
-        0
-      );
-
-      const totalEl = document.getElementById("total-tasks");
-      const pendingEl = document.getElementById("pending-tasks");
-      const completedEl = document.getElementById("completed-tasks");
-      const timeEl = document.getElementById("total-time");
-
-      if (totalEl) totalEl.textContent = total;
-      if (pendingEl) pendingEl.textContent = pending;
-      if (completedEl) completedEl.textContent = completed;
-      if (timeEl) timeEl.textContent = `${totalTime} phút`;
-    },
     renderTasks(tasks) {
       const container = document.getElementById("work-items-container");
       if (!container) {
@@ -156,99 +137,204 @@
         return;
       }
 
+      // Tạo bảng công việc
       let html = `
-  <table class="work-table">
-    <thead>
-      <tr>
-        <th class="w-12"><input type="checkbox" id="select-all-tasks" class="rounded"></th>
-        <th>Công việc</th>
-        <th class="w-32">Ưu tiên</th>
-        <th class="w-32">Trạng thái</th>
-        <th class="w-40">Thời gian</th>
-        <th class="w-48">Thao tác</th>
-      </tr>
-    </thead>
-    <tbody>
-`;
+    <div class="work-table-container">
+      <table class="work-table">
+        <thead>
+          <tr>
+            <th style="width: 40px;">
+              <input type="checkbox" id="select-all-tasks" class="rounded text-blue-600">
+            </th>
+            <th>Tiêu đề</th>
+            <th>Danh mục</th>
+            <th>Ưu tiên</th>
+            <th>Trạng thái</th>
+            <th>Thời hạn</th>
+            <th>Thời gian ước tính</th>
+            <th style="text-align: right;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
 
       tasks.forEach((task) => {
         const isCompleted = task.TrangThaiThucHien === 2;
-        const priorityMap = { 1: "low", 2: "medium", 3: "high", 4: "high" };
-        const priorityClass = priorityMap[task.MucDoUuTien] || "medium";
+        const completedClass = isCompleted ? "completed" : "";
+
+        // Xác định class ưu tiên
+        let priorityClass = "";
+        let priorityText = "";
+        let priorityColor = "";
+
+        switch (task.MucDoUuTien) {
+          case 1:
+            priorityClass = "low-priority";
+            priorityText = "Thấp";
+            priorityColor = "priority-low";
+            break;
+          case 2:
+            priorityClass = "medium-priority";
+            priorityText = "Trung bình";
+            priorityColor = "priority-medium";
+            break;
+          case 3:
+            priorityClass = "high-priority";
+            priorityText = "Cao";
+            priorityColor = "priority-high";
+            break;
+          case 4:
+            priorityClass = "high-priority";
+            priorityText = "Rất cao";
+            priorityColor = "priority-high";
+            break;
+          default:
+            priorityClass = "medium-priority";
+            priorityText = "Trung bình";
+            priorityColor = "priority-medium";
+        }
+
+        // Trạng thái
+        let statusText = "";
+        let statusClass = "";
+        if (isCompleted) {
+          statusText = "Hoàn thành";
+          statusClass = "status-completed";
+        } else {
+          statusText = "Đang chờ";
+          statusClass = "status-pending";
+        }
+
+        // Danh mục
         const categoryColor = task.MauSac || "#3B82F6";
+        const categoryName = task.TenLoai || "Không phân loại";
+
+        // Định dạng thời gian
+        const estimateTime = task.ThoiGianUocTinh
+          ? `${task.ThoiGianUocTinh} phút`
+          : "Chưa xác định";
+
+        // Thời hạn (nếu có)
+        let deadlineText = "Không có";
+        if (task.GioKetThucCoDinh) {
+          const deadline = new Date(task.GioKetThucCoDinh);
+          deadlineText = deadline.toLocaleDateString("vi-VN");
+        } else if (task.ThoiHan) {
+          const deadline = new Date(task.ThoiHan);
+          deadlineText = deadline.toLocaleDateString("vi-VN");
+        }
 
         html += `
-    <tr data-task-id="${task.MaCongViec}" class="${
-          isCompleted ? "completed" : ""
-        } priority-${priorityClass}">
-      <td><input type="checkbox" class="task-checkbox rounded"></td>
-      <td>
-        <div class="flex items-center gap-3">
-          <div class="w-1 h-12 rounded" style="background-color: ${categoryColor}"></div>
-          <div class="flex-1">
-            <div class="font-medium text-gray-900 ${
-              isCompleted ? "line-through text-gray-500" : ""
-            }">
-              ${task.TieuDe}
-            </div>
-            ${
-              task.MoTa
-                ? `<div class="text-sm text-gray-600 mt-1">${task.MoTa}</div>`
-                : ""
-            }
+      <tr class="${completedClass} ${priorityClass}" data-task-id="${task.ID}">
+        <td>
+          <input type="checkbox" class="task-checkbox rounded text-blue-600" data-task-id="${
+            task.ID
+          }">
+        </td>
+        <td>
+          <div class="font-medium ${
+            isCompleted ? "line-through text-gray-500" : "text-gray-900"
+          }">
+            ${task.TieuDe}
           </div>
-        </div>
-      </td>
-      <td>
-        <span class="priority-indicator priority-${priorityClass}">
-          <i class="fas fa-circle text-xs"></i>
           ${
-            priorityClass === "high"
-              ? "Cao"
-              : priorityClass === "medium"
-              ? "Trung bình"
-              : "Thấp"
+            task.MoTa
+              ? `<div class="text-sm text-gray-500 mt-1">${task.MoTa.substring(
+                  0,
+                  60
+                )}${task.MoTa.length > 60 ? "..." : ""}</div>`
+              : ""
           }
-        </span>
-      </td>
-      <td>
-        <span class="status-badge ${
-          isCompleted ? "status-completed" : "status-pending"
-        }">
-          ${isCompleted ? "Hoàn thành" : "Đang chờ"}
-        </span>
-      </td>
-      <td class="text-sm text-gray-600">
-        <i class="fas fa-clock mr-1"></i>${task.ThoiGianUocTinh || 60} phút
-      </td>
-      <td>
-        <div class="action-buttons">
-          <button class="action-btn toggle-complete" data-task-id="${
-            task.MaCongViec
-          }">
-            <i class="fas ${isCompleted ? "fa-undo" : "fa-check"}"></i>
-            ${isCompleted ? "Mở lại" : "Hoàn thành"}
-          </button>
-          <button class="action-btn edit-task" data-task-id="${
-            task.MaCongViec
-          }">
-            <i class="fas fa-edit"></i> Sửa
-          </button>
-          <button class="action-btn delete-task" data-task-id="${
-            task.MaCongViec
-          }">
-            <i class="fas fa-trash"></i> Xóa
-          </button>
-        </div>
-      </td>
-    </tr>
-  `;
+        </td>
+        <td>
+          <div class="category-tag" style="background-color: ${categoryColor}20; color: ${categoryColor};">
+            <span class="category-color" style="background-color: ${categoryColor};"></span>
+            ${categoryName}
+          </div>
+        </td>
+        <td>
+          <span class="priority-indicator ${priorityColor}">
+            <i class="fas fa-${
+              task.MucDoUuTien >= 3 ? "exclamation-triangle" : "flag"
+            }"></i>
+            ${priorityText}
+          </span>
+        </td>
+        <td>
+          <span class="status-badge ${statusClass}">
+            ${statusText}
+          </span>
+        </td>
+        <td>${deadlineText}</td>
+        <td>${estimateTime}</td>
+        <td>
+          <div class="action-buttons">
+            <button class="action-btn complete-btn toggle-complete" data-task-id="${
+              task.ID
+            }">
+              <i class="fas fa-${isCompleted ? "undo" : "check"}"></i>
+              ${isCompleted ? "Mở lại" : "Hoàn thành"}
+            </button>
+            <button class="action-btn edit-btn edit-task" data-task-id="${
+              task.ID
+            }">
+              <i class="fas fa-edit"></i>
+              Sửa
+            </button>
+            <button class="action-btn delete-btn delete-task" data-task-id="${
+              task.ID
+            }">
+              <i class="fas fa-trash"></i>
+              Xóa
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
       });
 
-      html += `</tbody></table>`;
+      html += `
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Thêm filter và search -->
+    <div class="work-filters mt-6">
+      <div class="filter-group">
+        <label class="filter-label">Lọc theo trạng thái</label>
+        <select id="status-filter" class="filter-select">
+          <option value="all">Tất cả</option>
+          <option value="pending">Đang chờ</option>
+          <option value="completed">Đã hoàn thành</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label class="filter-label">Lọc theo ưu tiên</label>
+        <select id="priority-filter" class="filter-select">
+          <option value="all">Tất cả</option>
+          <option value="low">Thấp</option>
+          <option value="medium">Trung bình</option>
+          <option value="high">Cao</option>
+        </select>
+      </div>
+      
+      <div class="filter-group" style="flex-grow: 1;">
+        <label class="filter-label">Tìm kiếm</label>
+        <input type="text" id="task-search" class="search-input" placeholder="Tìm kiếm theo tiêu đề, mô tả...">
+      </div>
+    </div>
+    
+    <!-- Tổng số công việc -->
+    <div class="mt-4 text-sm text-gray-600">
+      Hiển thị <span class="font-semibold">${tasks.length}</span> công việc
+    </div>
+  `;
+
       container.innerHTML = html;
-      // ✅ FIX: Truyền tasks vào bindTableEvents
-      this.bindTableEvents(tasks);
+
+      // Bind sự kiện cho các nút trong bảng
+      this.bindTableEvents();
 
       // Setup filter và search
       this.setupFilters();
@@ -257,51 +343,31 @@
     },
 
     // Thêm hàm bindTableEvents để xử lý sự kiện
-    bindTableEvents(tasks = []) {
-      console.log(`🔗 Binding events for ${tasks.length} tasks`);
-
-      // ✅ Toggle complete
+    bindTableEvents() {
+      // Toggle complete
       document.querySelectorAll(".toggle-complete").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-
+        btn.addEventListener("click", (e) => {
           const taskId = e.currentTarget.dataset.taskId;
-          const isCompleted = e.currentTarget.textContent.includes("Mở lại");
-
-          console.log(
-            `🎯 Toggle task ${taskId}, currently: ${
-              isCompleted ? "completed" : "pending"
-            }`
-          );
-
-          await this.updateTaskStatus(taskId, !isCompleted);
+          const isCompleted = e.currentTarget
+            .querySelector("i")
+            .classList.contains("fa-check");
+          this.updateTaskStatus(taskId, !isCompleted);
         });
       });
 
-      // ✅ Edit task
+      // Edit task
       document.querySelectorAll(".edit-task").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-
+        btn.addEventListener("click", (e) => {
           const taskId = e.currentTarget.dataset.taskId;
-          console.log(`✏️ Edit task ${taskId}`);
-
-          await this.editTask(taskId);
+          this.editTask(taskId);
         });
       });
 
-      // ✅ Delete task
+      // Delete task
       document.querySelectorAll(".delete-task").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-
+        btn.addEventListener("click", (e) => {
           const taskId = e.currentTarget.dataset.taskId;
-          console.log(`🗑️ Delete task ${taskId}`);
-
-          await this.deleteTask(taskId);
+          this.deleteTask(taskId);
         });
       });
 
@@ -322,27 +388,6 @@
           this.updateSelectAllCheckbox();
         });
       });
-
-      console.log(`✅ Bound events for ${tasks.length} tasks`);
-    },
-
-    // Thêm hàm setupFilters
-    setupFilters() {
-      const statusFilter = document.getElementById("status-filter");
-      const priorityFilter = document.getElementById("priority-filter");
-      const searchInput = document.getElementById("task-search");
-
-      if (statusFilter) {
-        statusFilter.addEventListener("change", () => this.filterTasks());
-      }
-
-      if (priorityFilter) {
-        priorityFilter.addEventListener("change", () => this.filterTasks());
-      }
-
-      if (searchInput) {
-        searchInput.addEventListener("input", () => this.filterTasks());
-      }
     },
 
     // Thêm hàm setupFilters
@@ -458,10 +503,6 @@
 
     async updateTaskStatus(taskId, completed) {
       try {
-        console.log(
-          `📝 Updating task ${taskId} to ${completed ? "completed" : "pending"}`
-        );
-
         if (typeof Utils === "undefined") {
           throw new Error("Utils module not available");
         }
@@ -471,6 +512,7 @@
         });
 
         if (!result.success) {
+          // ĐỔI từ result.ok sang result.success
           throw new Error(result.message || "Cập nhật thất bại");
         }
 
@@ -478,8 +520,6 @@
           `Đã ${completed ? "hoàn thành" : "hủy hoàn thành"} công việc`,
           "success"
         );
-
-        // Reload tasks
         await this.loadTasks();
       } catch (err) {
         console.error("❌ Error updating task:", err);
@@ -629,306 +669,32 @@
     },
 
     bindEvents() {
-      // Nút tạo công việc mới
-      const createBtn = document.getElementById("create-task-btn");
-      if (createBtn) {
-        createBtn.addEventListener("click", () => {
+      document.addEventListener("click", (e) => {
+        if (e.target && e.target.id === "create-task-btn") {
+          e.preventDefault();
+          e.stopPropagation();
           if (window.ModalManager) {
             ModalManager.showCreateTaskModal();
           }
-        });
-      }
-
-      // Nút tạo công việc đầu tiên (trong empty state)
-      document.addEventListener("click", (e) => {
-        if (e.target && e.target.id === "create-empty-task-btn") {
-          if (window.ModalManager) {
-            ModalManager.showCreateTaskModal();
-          }
-        }
-      });
-
-      // Setup event delegation cho action buttons
-      document.addEventListener("click", (e) => {
-        const target = e.target.closest(
-          ".toggle-complete, .edit-task, .delete-task"
-        );
-        if (!target || !target.dataset.taskId) return;
-
-        const taskId = target.dataset.taskId;
-
-        if (target.classList.contains("toggle-complete")) {
-          const isCompleted = target.innerHTML.includes("Mở lại");
-          this.toggleTaskCompletion(taskId, !isCompleted);
-        } else if (target.classList.contains("edit-task")) {
-          this.openEditModal(taskId);
-        } else if (target.classList.contains("delete-task")) {
-          this.confirmDeleteTask(taskId);
-        }
-      });
-    },
-
-    setupTaskActions(tasks = []) {
-      console.log(`🔗 Setting up actions for ${tasks.length} tasks`);
-
-      // Xử lý hoàn thành/mở lại công việc
-      document.querySelectorAll(".toggle-complete").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          const taskId = e.currentTarget.dataset.taskId;
-          const isCurrentlyCompleted =
-            e.currentTarget.innerHTML.includes("Mở lại");
-          await this.toggleTaskCompletion(taskId, !isCurrentlyCompleted);
-        });
-      });
-
-      // Xử lý sửa công việc
-      document.querySelectorAll(".edit-task").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          const taskId = e.currentTarget.dataset.taskId;
-          await this.openEditModal(taskId);
-        });
-      });
-
-      // Xử lý xóa công việc
-      document.querySelectorAll(".delete-task").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          const taskId = e.currentTarget.dataset.taskId;
-          await this.confirmDeleteTask(taskId);
-        });
-      });
-    },
-
-    // Phương thức hoàn thành/mở lại công việc
-    async toggleTaskCompletion(taskId, complete) {
-      try {
-        const result = await Utils.makeRequest(`/api/tasks/${taskId}`, "PUT", {
-          TrangThaiThucHien: complete ? 2 : 0,
-        });
-
-        if (result.success) {
-          Utils.showToast(
-            `Đã ${complete ? "hoàn thành" : "mở lại"} công việc`,
-            "success"
-          );
-
-          // Cập nhật UI ngay lập tức
-          this.updateTaskUI(taskId, complete);
-
-          // Refresh toàn bộ danh sách sau 1 giây
-          setTimeout(() => {
-            this.loadTasks();
-          }, 1000);
-        } else {
-          throw new Error(result.message || "Thao tác thất bại");
-        }
-      } catch (error) {
-        console.error("❌ Error toggling task completion:", error);
-        Utils.showToast("Không thể cập nhật trạng thái", "error");
-      }
-    },
-
-    // Cập nhật UI ngay lập tức
-    updateTaskUI(taskId, completed) {
-      const row = document.querySelector(`tr[data-task-id="${taskId}"]`);
-      if (!row) return;
-
-      const titleElement = row.querySelector("td:nth-child(2) .font-medium");
-      const statusBadge = row.querySelector(".status-badge");
-      const completeBtn = row.querySelector(".toggle-complete");
-
-      if (completed) {
-        // Cập nhật thành hoàn thành
-        row.classList.add("completed");
-        if (titleElement)
-          titleElement.classList.add("line-through", "text-gray-500");
-        if (statusBadge) {
-          statusBadge.textContent = "Hoàn thành";
-          statusBadge.className = "status-badge status-completed";
-        }
-        if (completeBtn) {
-          completeBtn.innerHTML = '<i class="fas fa-undo"></i> Mở lại';
-        }
-      } else {
-        // Cập nhật thành đang chờ
-        row.classList.remove("completed");
-        if (titleElement)
-          titleElement.classList.remove("line-through", "text-gray-500");
-        if (statusBadge) {
-          statusBadge.textContent = "Đang chờ";
-          statusBadge.className = "status-badge status-pending";
-        }
-        if (completeBtn) {
-          completeBtn.innerHTML = '<i class="fas fa-check"></i> Hoàn thành';
-        }
-      }
-    },
-
-    // Mở modal chỉnh sửa
-    async openEditModal(taskId) {
-      try {
-        // Hiển thị loading
-        Utils.showToast("Đang tải thông tin công việc...", "info");
-
-        // Gọi API lấy thông tin công việc
-        const response = await Utils.makeRequest(`/api/tasks/${taskId}`, "GET");
-
-        if (response.success && response.data) {
-          const taskData = response.data;
-
-          // Mở modal chỉnh sửa
-          if (window.ModalManager && ModalManager.showCreateTaskModal) {
-            ModalManager.showCreateTaskModal(taskData);
-          } else {
-            // Fallback: mở modal đơn giản
-            this.showSimpleEditModal(taskData);
-          }
-        } else {
-          throw new Error("Không tìm thấy thông tin công việc");
-        }
-      } catch (error) {
-        console.error("❌ Error loading task for edit:", error);
-        Utils.showToast("Không thể tải thông tin công việc", "error");
-      }
-    },
-
-    // Xác nhận xóa
-    async confirmDeleteTask(taskId) {
-      try {
-        // Tìm thông tin công việc trong DOM
-        const row = document.querySelector(`tr[data-task-id="${taskId}"]`);
-        if (!row) {
-          Utils.showToast("Không tìm thấy công việc", "error");
           return;
         }
+      });
 
-        const taskTitle =
-          row.querySelector("td:nth-child(2) .font-medium")?.textContent ||
-          "Công việc này";
+      const createBtn = document.getElementById("create-task-btn");
+      if (createBtn) {
+        const handler = () => {
+          if (window.ModalManager) {
+            ModalManager.showCreateTaskModal();
+          }
+        };
 
-        // Hiển thị xác nhận
-        const confirmation = await Swal.fire({
-          title: "Xác nhận xóa",
-          html: `Bạn có chắc chắn muốn xóa công việc <strong>"${taskTitle}"</strong>?`,
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#d33",
-          cancelButtonColor: "#3085d6",
-          confirmButtonText: "Xóa",
-          cancelButtonText: "Hủy",
-          reverseButtons: true,
-          showLoaderOnConfirm: true,
-          preConfirm: async () => {
-            try {
-              const result = await Utils.makeRequest(
-                `/api/tasks/${taskId}`,
-                "DELETE"
-              );
-
-              // Xử lý confirm nhiều lần nếu có lịch trình
-              if (result.requireConfirmation) {
-                const forceConfirm = await Swal.fire({
-                  title: "Xác nhận thêm",
-                  html: `${result.message}<br><br>${result.details}<br><br>Bạn vẫn muốn xóa?`,
-                  icon: "warning",
-                  showCancelButton: true,
-                  confirmButtonColor: "#d33",
-                  cancelButtonColor: "#3085d6",
-                  confirmButtonText: "Vẫn xóa",
-                  cancelButtonText: "Hủy",
-                });
-
-                if (forceConfirm.isConfirmed) {
-                  const forceResult = await Utils.makeRequest(
-                    `/api/tasks/${taskId}?force=true`,
-                    "DELETE"
-                  );
-                  return forceResult;
-                }
-                return null;
-              }
-              return result;
-            } catch (error) {
-              Swal.showValidationMessage(`Lỗi: ${error.message}`);
-              return null;
-            }
-          },
+        createBtn.addEventListener("click", handler);
+        this.eventListeners.push({
+          element: createBtn,
+          event: "click",
+          handler,
         });
-
-        if (confirmation.isConfirmed && confirmation.value?.success) {
-          // Hiệu ứng xóa
-          row.style.backgroundColor = "#fee";
-          row.style.transition = "all 0.3s";
-          setTimeout(() => {
-            row.style.opacity = "0";
-            row.style.height = "0";
-            row.style.padding = "0";
-            row.style.margin = "0";
-            row.style.overflow = "hidden";
-          }, 300);
-
-          // Xóa hoàn toàn sau animation
-          setTimeout(() => {
-            this.loadTasks();
-          }, 600);
-
-          Utils.showToast("Đã xóa công việc thành công", "success");
-
-          // Dispatch event để các module khác biết
-          document.dispatchEvent(
-            new CustomEvent("taskDeleted", {
-              detail: { taskId },
-            })
-          );
-        }
-      } catch (error) {
-        console.error("❌ Error deleting task:", error);
-        Utils.showToast("Không thể xóa công việc", "error");
       }
-    },
-
-    // Fallback modal đơn giản
-    showSimpleEditModal(taskData) {
-      const modalHTML = `
-        <div class="modal-overlay">
-            <div class="modal-content">
-                <h3 class="modal-title">Chỉnh sửa công việc</h3>
-                <p class="text-gray-600 mb-4">Chức năng này cần ModalManager để hoạt động đầy đủ.</p>
-                <pre class="bg-gray-100 p-4 rounded text-sm">${JSON.stringify(
-                  taskData,
-                  null,
-                  2
-                )}</pre>
-                <div class="modal-actions">
-                    <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Đóng</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-      document.body.insertAdjacentHTML("beforeend", modalHTML);
-    },
-
-    // Thêm vào workManager.js
-    formatDate(dateString) {
-      if (!dateString) return "Không có";
-      const date = new Date(dateString);
-      return date.toLocaleDateString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    },
-
-    formatDateTime(dateString) {
-      if (!dateString) return "Không có";
-      const date = new Date(dateString);
-      return date.toLocaleDateString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
     },
 
     cleanup() {

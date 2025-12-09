@@ -307,10 +307,6 @@
           id: "aiSuggestionModal",
           path: "components/modals/ai-suggestion-modal.html",
         },
-        {
-          id: "createCategoryModal",
-          path: "components/modals/create-category-modal.html",
-        },
       ];
 
       for (const modal of modals) {
