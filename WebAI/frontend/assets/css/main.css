@@ -1,6 +1,7 @@
 /* ===================================
    RESET & BASE STYLES
    =================================== */
+
 * {
   margin: 0;
   padding: 0;
@@ -16,6 +17,26 @@ body {
 /* ===================================
    SECTION VISIBILITY
    =================================== */
+
+#createCategoryModal {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#createCategoryModal.hidden {
+  display: none !important;
+}
+
+#createCategoryModal:not(.hidden) {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+/* Override class .modal for category modal */
+
 .section {
   display: none;
   width: 100%;
@@ -80,13 +101,24 @@ body {
   height: 100%;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(2px);
-  z-index: 1;
+  z-index: 9999;
+}
+
+#createCategoryModal .relative {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-parent-blur {
+  filter: blur(2px);
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 /* Modal content - QUAN TRỌNG: phải là direct child */
 .modal > .modal-content {
   position: relative;
-  z-index: 2;
+  z-index: 10001;
   background: white;
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -1749,89 +1781,28 @@ body.fa-loaded span[class*="fa-"] {
   border-color: #cbd5e1;
 }
 
-/* Thêm vào main.css hoặc tạo file category.css */
-.category-item {
-  transition: all 0.2s ease;
+/* Ngăn không cho kéo thả trong work section */
+#work-items-container [draggable="true"],
+#work-items-container [data-task-id] {
+  user-select: auto !important;
+  cursor: default !important;
 }
 
-.category-item:hover {
-  transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+#work-items-container [draggable="true"]:hover,
+#work-items-container [data-task-id]:hover {
+  transform: none !important;
+  transition: none !important;
 }
 
-.category-item.selected {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
-  border-width: 2px;
+/* Chỉ cho phép kéo thả trong sidebar */
+#task-list [draggable="true"],
+#task-list [data-task-id] {
+  user-select: none;
+  cursor: grab;
 }
 
-.category-color {
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
-}
-
-.category-radio:checked + .flex .category-color {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px #3b82f6;
-}
-
-.category-radio:checked + .flex .category-name {
-  color: #1e40af;
-  font-weight: 600;
-}
-
-/* Custom radio button */
-.category-radio {
-  appearance: none;
-  -webkit-appearance: none;
-  border: 2px solid #d1d5db;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.2s;
-}
-
-.category-radio:hover {
-  border-color: #9ca3af;
-}
-
-.category-radio:checked {
-  border-color: #3b82f6;
-  background-color: #3b82f6;
-}
-
-.category-radio:checked::after {
-  content: "";
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 8px;
-  height: 8px;
-  background-color: white;
-  border-radius: 50%;
-}
-
-/* Container scroll */
-.category-container {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.category-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.category-container::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 3px;
-}
-
-.category-container::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
-}
-
-.category-container::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+#task-list [draggable="true"]:hover,
+#task-list [data-task-id]:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
 }

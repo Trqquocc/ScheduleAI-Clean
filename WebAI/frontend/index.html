@@ -127,22 +127,19 @@
 
     <div id="createTaskModal" class="modal"></div>
     <div id="settingsModal" class="modal"></div>
-    <div id="eventDetailModal" class="modal"></div>
-    <div id="aiSuggestionModal" class="modal"></div>
 
-    <!-- ============================================ -->
-    <!-- JAVASCRIPT FILES - THỨ TỰ QUAN TRỌNG -->
-    <!-- ============================================ -->
-
-    <!-- 1. Core utilities - MUST LOAD FIRST -->
+    <!-- 1. utils.js - Phải load ĐẦU TIÊN vì mọi thứ dùng nó -->
     <script src="assets/js/utils.js"></script>
 
-    <!-- 2. Core modules -->
+    <!-- 2. Các module core khác (nếu có) -->
     <script src="assets/js/modalManager.js"></script>
     <script src="assets/js/AppNavigation.js"></script>
     <script src="assets/js/componentLoader.js"></script>
+    <!-- phụ thuộc Utils -->
 
-    <!-- 3. Feature modules -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+    <!-- 3. Các module lớn (có thể load song song được) -->
     <script src="assets/js/calendarModule.js"></script>
     <script src="assets/js/workManager.js"></script>
     <script src="assets/js/ai-suggestion-handler.js"></script>
@@ -150,11 +147,14 @@
     <script src="assets/js/salaryManager.js"></script>
     <script src="assets/js/tabManager.js"></script>
     <script src="assets/js/profile.js"></script>
-    <script src="assets/js/category-manager.js"></script>
     <script src="assets/js/create-task-modal.js"></script>
     <script src="assets/js/settings-modal.js"></script>
+    <div id="eventDetailModal" class="modal"></div>
+    <div id="aiSuggestionModal" class="modal"></div>
+    <div id="createCategoryModal" class="modal"></div>
 
-    <!-- 4. App initialization - MUST LOAD LAST -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- 4. app.js - Phải load CUỐI CÙNG vì nó khởi động toàn bộ app -->
     <script src="assets/js/app.js"></script>
 
     <script>
@@ -167,11 +167,12 @@
           const payload = JSON.parse(atob(token.split(".")[1]));
           if (payload.exp * 1000 < Date.now()) throw new Error("Token expired");
 
-          // Wait for Font Awesome
+          // ✅ Wait for Font Awesome
           function waitForFA(callback, maxWait = 3000) {
             const start = Date.now();
 
             function check() {
+              // Test if FA renders icons
               const test = document.createElement("i");
               test.className = "fas fa-check";
               test.style.cssText = "position:absolute;left:-9999px;";
@@ -225,6 +226,14 @@
           localStorage.clear();
           location.href = "/login.html";
         }
+      })();
+      (function () {
+        const script = document.createElement("script");
+        script.src = "/js/ai-modal-handler.js";
+        script.onload = function () {
+          console.log("✅ AI Modal Handler loaded");
+        };
+        document.head.appendChild(script);
       })();
     </script>
   </body>

@@ -1101,42 +1101,34 @@
     // EXTERNAL DRAGGABLE (FullCalendar method)
     // ==========================================================
     setupExternalDraggable() {
-      const taskList = document.getElementById("task-list");
-      if (!taskList || !FullCalendar.Draggable) {
-        console.warn("Task list or FullCalendar.Draggable not available");
+      console.log("🔍 Searching for draggable items...");
+
+      // CHỈ TÌM KIẾM TRONG SIDEBAR, KHÔNG PHẢI TOÀN BỘ TRANG
+      const selectors = [
+        '#task-list div[draggable="true"]',
+        "#task-list > div",
+        "#task-list [data-task-id]",
+      ];
+
+      let draggableItems = [];
+
+      selectors.forEach((selector) => {
+        const items = document.querySelectorAll(selector);
+        console.log(
+          `📦 Found ${items.length} items with selector: ${selector}`
+        );
+        items.forEach((item) => draggableItems.push(item));
+      });
+
+      console.log(`🎯 Total draggable items found: ${draggableItems.length}`);
+
+      if (draggableItems.length === 0) {
+        console.log("⚠️ No draggable items found!");
         return;
       }
 
-      if (this.draggableInstance) {
-        try {
-          this.draggableInstance.destroy();
-        } catch (e) {}
-        this.draggableInstance = null;
-      }
-
-      this.draggableInstance = new FullCalendar.Draggable(taskList, {
-        itemSelector: "[draggable='true']",
-        eventData: (el) => {
-          const taskId = el.dataset.taskId;
-          const taskTitle =
-            el.dataset.taskTitle || el.textContent.trim() || "Công việc";
-          const taskColor = el.dataset.taskColor || "#60A5FA";
-
-          return {
-            title: taskTitle,
-            duration: el.dataset.taskDuration || "01:00",
-            extendedProps: {
-              taskId: taskId,
-              description: el.dataset.taskDescription || "",
-              completed: false,
-            },
-            backgroundColor: taskColor,
-            borderColor: taskColor,
-          };
-        },
-      });
-
-      console.log("✅ FullCalendar.Draggable initialized");
+      // CHỈ SETUP DRAG CHO ITEMS TRONG SIDEBAR
+      this.setupDragForItems(draggableItems);
     },
 
     // ==========================================================
