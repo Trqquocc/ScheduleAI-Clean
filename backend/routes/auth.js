@@ -1,3 +1,4 @@
+// xác thực người dùng và quản lý đăng nhập/đăng ký
 require("dotenv").config();
 const express = require("express");
 const bcrypt = require("bcrypt");
@@ -174,7 +175,7 @@ router.get("/verify", async (req, res) => {
       .request()
       .input("UserID", sql.Int, decoded.userId)
       .query(
-        "SELECT UserID, Username, Email, HOTen, LuongTheoGio FROM Users WHERE UserID = @UserID"
+        "SELECT UserID, Username, Email, HoTen, LuongTheoGio FROM Users WHERE UserID = @UserID"
       );
 
     if (result.recordset.length === 0) {

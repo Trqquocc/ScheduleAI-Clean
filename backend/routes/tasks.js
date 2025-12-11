@@ -227,6 +227,75 @@ router.post("/", authenticateToken, async (req, res) => {
   }
 });
 
+router.get("/:id", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const taskId = parseInt(req.params.id);
+
+    if (isNaN(taskId)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID không hợp lệ",
+      });
+    }
+
+    const pool = await dbPoolPromise;
+    const result = await pool
+      .request()
+      .input("MaCongViec", sql.Int, taskId)
+      .input("UserID", sql.Int, userId).query(`
+        SELECT 
+          cv.MaCongViec AS ID,
+          cv.UserID,
+          cv.MaLoai,
+          cv.TieuDe,
+          cv.MoTa,
+          cv.Tag,
+          cv.CoThoiGianCoDinh,
+          cv.GioBatDauCoDinh,
+          cv.GioKetThucCoDinh,
+          cv.LapLai,
+          cv.TrangThaiThucHien,
+          cv.NgayTao,
+          cv.ThoiGianUocTinh,
+          cv.MucDoUuTien,
+          cv.MucDoPhucTap,
+          cv.MucDoTapTrung,
+          cv.ThoiDiemThichHop,
+          cv.LuongTheoGio,
+          CASE cv.MucDoUuTien
+            WHEN 1 THEN '#34D399'
+            WHEN 2 THEN '#60A5FA'
+            WHEN 3 THEN '#FBBF24'
+            WHEN 4 THEN '#F87171'
+            ELSE '#60A5FA'
+          END AS MauSac
+        FROM CongViec cv
+        WHERE cv.MaCongViec = @MaCongViec 
+          AND cv.UserID = @UserID
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy công việc",
+      });
+    }
+
+    const task = result.recordset[0];
+    res.json({
+      success: true,
+      data: task,
+    });
+  } catch (error) {
+    console.error("Lỗi lấy chi tiết công việc:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+    });
+  }
+});
+
 // PUT /api/tasks/:id - Cập nhật công việc (cũng hỗ trợ các trường mới)
 router.put("/:id", authenticateToken, async (req, res) => {
   try {

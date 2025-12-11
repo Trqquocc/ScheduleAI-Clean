@@ -120,7 +120,6 @@ router.post("/events", async (req, res) => {
         )
       `);
 
-    // ✅ FIX: Cập nhật trạng thái công việc nếu cần
     if (MaCongViec) {
       await pool
         .request()
@@ -149,14 +148,12 @@ router.post("/events", async (req, res) => {
   }
 });
 
-// ✅ PUT /api/calendar/events/:id - Cập nhật event - FIXED VERSION
+//  PUT /api/calendar/events/:id - Cập nhật event 
 router.put("/events/:id", async (req, res) => {
   try {
     const userId = req.user.UserID;
     const eventId = req.params.id;
     const { ThoiGianBatDau, ThoiGianKetThuc, GhiChu, DaHoanThanh } = req.body;
-
-    // ✅ FIX: Sử dụng dbPoolPromise
     const pool = await dbPoolPromise;
 
     await pool
@@ -180,7 +177,6 @@ router.put("/events/:id", async (req, res) => {
         WHERE MaLichTrinh = @MaLichTrinh AND UserID = @UserID
       `);
 
-    // ✅ FIX: Cập nhật trạng thái công việc nếu hoàn thành
     if (DaHoanThanh !== undefined) {
       const eventResult = await pool
         .request()

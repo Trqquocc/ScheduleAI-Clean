@@ -1,3 +1,4 @@
+//Kiểm tra xác thực người dùng
 // middleware/auth.js - CHỈ CẦN MỘT HÀM authenticateToken
 
 const jwt = require("jsonwebtoken");

@@ -111,7 +111,7 @@ router.delete("/:id", async (req, res) => {
         WHERE MaLoai = @MaLoai AND UserID = @UserID
       `);
 
-    res.json({ success: true, message: "Xóa danh mục thành công" });
+    res.json({ success: true, message: "Xó a danh mục thành công" });
   } catch (error) {
     console.error("Lỗi xóa danh mục:", error);
     res.status(500).json({ success: false, message: "Lỗi xóa danh mục" });
